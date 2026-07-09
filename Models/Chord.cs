@@ -6,7 +6,7 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
-public class Chord : IEnumerable<Note>, IStringSerializable
+public class Chord : IEnumerable<Note>
 {
     private List<Note> noteList = new List<Note>();
 
@@ -480,16 +480,16 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             default:
             break;
         }
-        setFundamental(noteType);
-        name = noteList[0].getName() + " " + chordType.ToString();
+        SetFundamental(noteType);
+        name = noteList[0].GetName() + " " + chordType.ToString();
 
-        if (instrument.getStringCount() > 6)
-        StringExpander.addMoreNotes(this, instrument.getStringCount());
+        if (instrument.GetStringCount() > 6)
+        StringExpander.addMoreNotes(this, instrument.GetStringCount());
 
-        fixDuplicateNoteToOctave();
+        FixDuplicateNoteToOctave();
 
-        if (instrument.getStringCount() < 6)
-        StringExpander.removeSomeNotes(this, instrument.getStringCount());
+        if (instrument.GetStringCount() < 6)
+        StringExpander.removeSomeNotes(this, instrument.GetStringCount());
     }
 
     /**
@@ -516,31 +516,31 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(note);
         }
 
-        if (instrument.getStringCount() > 6)
-        StringExpander.addMoreNotes(this, instrument.getStringCount());
-        else if (instrument.getStringCount() < 6)
-        StringExpander.removeSomeNotes(this, instrument.getStringCount());
+        if (instrument.GetStringCount() > 6)
+        StringExpander.addMoreNotes(this, instrument.GetStringCount());
+        else if (instrument.GetStringCount() < 6)
+        StringExpander.removeSomeNotes(this, instrument.GetStringCount());
     }
 
-    private void fixDuplicateNoteToOctave()
+    private void FixDuplicateNoteToOctave()
     {
-        if (noteList[1].getPitch() == noteList[2].getPitch())
-        noteList[1].setPitch(noteList[1].getPitch() - 12);
+        if (noteList[1].GetPitch() == noteList[2].GetPitch())
+        noteList[1].SetPitch(noteList[1].GetPitch() - 12);
 
-        if (noteList[0].getPitch() == noteList[1].getPitch())
-        noteList[0].setPitch(noteList[0].getPitch() - 12);
+        if (noteList[0].GetPitch() == noteList[1].GetPitch())
+        noteList[0].SetPitch(noteList[0].GetPitch() - 12);
 
-        if (noteList[0].getPitch() == noteList[2].getPitch())
-        noteList[0].setPitch(noteList[0].getPitch() - 12);
+        if (noteList[0].GetPitch() == noteList[2].GetPitch())
+        noteList[0].SetPitch(noteList[0].GetPitch() - 12);
 
-        if (noteList[0].getPitch() == noteList[1].getPitch())
-        noteList[0].setPitch(noteList[0].getPitch() - 12);
+        if (noteList[0].GetPitch() == noteList[1].GetPitch())
+        noteList[0].SetPitch(noteList[0].GetPitch() - 12);
     }
 
     /**
     * @param newFundamental will transpose chord to specified fundamental note
     */
-    public void setFundamental(int newFundamental)
+    public void SetFundamental(int newFundamental)
     {
         int minNote = Note.E + 2 * 12;
         int maxNote = Note.DSharp + 3 * 12;
@@ -550,14 +550,14 @@ public class Chord : IEnumerable<Note>, IStringSerializable
         while (newFundamental < minNote)
         newFundamental += 12;
 
-        int currentFundamental = noteList[0].getPitch();
+        int currentFundamental = noteList[0].GetPitch();
 
         int offset = newFundamental - currentFundamental;
 
         foreach (Note note in noteList)
         {
             if (note != null)
-            note.setPitch(note.getPitch() + offset);
+            note.SetPitch(note.GetPitch() + offset);
         }
     }
 
@@ -589,20 +589,11 @@ public class Chord : IEnumerable<Note>, IStringSerializable
     {
         foreach (Note other in noteList)
         {
-            if (note.getPitch() == other.getPitch())
+            if (note.GetPitch() == other.GetPitch())
             return true;
         }
         return false;
     }
-
-    // Java-style wrappers
-    public bool containsExact(Note note) => ContainsExact(note);
-    public void addNote(Note note) => AddNote(note);
-    public int lastPitch() => LastPitch();
-    public string serialize() => Serialize();
-    public int getChordTypeId() => GetChordTypeId();
-    public int getNoteType() => GetNoteType();
-    public int getAveragePitch() => GetAveragePitch();
 
     public void AddNote(Note note)
     {
@@ -615,7 +606,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
         while (index >= 0)
         {
             if (noteList[index] != null)
-            return noteList[index].getPitch();
+            return noteList[index].GetPitch();
             index--;
         }
         return 0;
@@ -638,7 +629,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
 
     public int GetKey()
     {
-        return noteList[0].getPitch() % 12;
+        return noteList[0].GetPitch() % 12;
     }
 
     public int GetChordTypeId()
@@ -799,7 +790,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
         int pitchSum = 0;
 
         foreach (Note note in noteList)
-        pitchSum += note.getPitch();
+        pitchSum += note.GetPitch();
 
         if (noteList.Count == 0)
             return 0;

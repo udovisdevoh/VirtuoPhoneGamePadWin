@@ -108,9 +108,4 @@ public class Note
     {
         this.pitch = pitch;
     }
-
-    // Java-style wrappers kept for converted code
-    public int getPitch() => GetPitch();
-    public void setPitch(int p) => SetPitch(p);
-    public string getName() => GetName();
 }

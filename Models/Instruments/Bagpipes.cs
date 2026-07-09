@@ -8,29 +8,25 @@ namespace VirtuoPhone.Models;
 
 public class Bagpipes : Instrument
 {
-    public Bagpipes(Context context) : base(context)
-    {
-    }
-
     protected void LoadSamples()
     {
-        addSample(new Note(Note.E, 2), R.Raw.bagpipese0);
-        addSample(new Note(Note.A, 2), R.Raw.bagpipesa0);
-        addSample(new Note(Note.D, 3), R.Raw.bagpipesd1);
-        addSample(new Note(Note.G, 3), R.Raw.bagpipesg1);
-        addSample(new Note(Note.B, 3), R.Raw.bagpipesb1);
-        addSample(new Note(Note.E, 4), R.Raw.bagpipese2);
-        addSample(new Note(Note.A, 4), R.Raw.bagpipesa2);
+        AddSample(new Note(Note.E, 2), R.Raw.bagpipese0);
+        AddSample(new Note(Note.A, 2), R.Raw.bagpipesa0);
+        AddSample(new Note(Note.D, 3), R.Raw.bagpipesd1);
+        AddSample(new Note(Note.G, 3), R.Raw.bagpipesg1);
+        AddSample(new Note(Note.B, 3), R.Raw.bagpipesb1);
+        AddSample(new Note(Note.E, 4), R.Raw.bagpipese2);
+        AddSample(new Note(Note.A, 4), R.Raw.bagpipesa2);
     }
 
-    protected void LoadDrone(Context context)
+    protected void LoadDrone()
     {
-        setDrone(new Drone(Note.A, R.Raw.bagpipesdroneloopa, 1f, 1.2f, 0f), context);
+        setDrone(new Drone(Note.A, R.Raw.bagpipesdroneloopa, 1f, 1.2f, 0f));
     }
 
     protected int BuildMinPitchToPlay()
     {
-        return new Note(Note.CSharp, 0).getPitch();
+        return new Note(Note.CSharp, 0).GetPitch();
     }
 
     protected int BuildStringCount()

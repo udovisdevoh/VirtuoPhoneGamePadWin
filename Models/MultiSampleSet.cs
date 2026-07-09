@@ -19,7 +19,7 @@ public class MultiSampleSet : IEnumerable<Sample>
         sampleList = new List<Sample>();
     }
 
-    public Sample getRandomSample(Random random)
+    public Sample GetRandomSample(Random random)
     {
         if (sampleList.Count == 1)
         return sampleList[0];
@@ -30,7 +30,7 @@ public class MultiSampleSet : IEnumerable<Sample>
         }
     }
 
-    public void addSample(Sample sample)
+    public void AddSample(Sample sample)
     {
         sampleList.Add(sample);
     }

@@ -22,7 +22,7 @@ public class Sample
     */
     public Sample(Note note, int resourceId, float volume)
     {
-        originalPitch = note.getPitch();
+        originalPitch = note.GetPitch();
         this.resourceId = resourceId;
         this.volume = volume;
     }
@@ -45,7 +45,7 @@ public class Sample
         return resourceId;
     }
 
-    public void setSoundId(int soundId)
+    public void SetSoundId(int soundId)
     {
         this.soundId = soundId;
     }
@@ -59,11 +59,4 @@ public class Sample
     {
         return volume;
     }
-
-    // Java-style wrappers for converted code
-    public int getOriginalPitch() => GetOriginalPitch();
-    public float getPitchMultiplicator(int desiredPitch, float pitchBend) => GetPitchMultiplicator(desiredPitch, pitchBend);
-    public int getResourceId() => GetResourceId();
-    public int getSoundId() => GetSoundId();
-    public float getVolume() => GetVolume();
 }

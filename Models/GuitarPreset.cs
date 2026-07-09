@@ -6,7 +6,7 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
-public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
+public class GuitarPreset : IEnumerable<Chord>
 {
     private string name = string.Empty;
 
@@ -82,15 +82,11 @@ public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
         return note;
     }
 
-    // Java-style wrappers
-    public Note getNoteAtJava(Point coordinates) => getNoteAt(coordinates);
-    public int getChordFundamentalNoteTypeAt(Point coordinates) => GetChordFundamentalNoteTypeAt(coordinates);
-
     public int GetChordFundamentalNoteTypeAt(Point coordinates)
     {
         Chord chord = chordList[coordinates.Y];
         Note note = chord[0];
-        return note.getPitch() % 12;
+        return note.GetPitch() % 12;
     }
 
     public string Serialize()
@@ -104,16 +100,13 @@ public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
         {
             if (chord != null)
             {
-                stringBuilder.Append(chord.serialize().Trim());
+                stringBuilder.Append(chord.Serialize().Trim());
                 stringBuilder.Append('\r');
             }
         }
 
         return stringBuilder.ToString();
     }
-
-    // Java-style wrapper
-    public string serialize() => Serialize();
 
     public void replaceChord(Chord oldChord, Chord newChord)
     {
@@ -136,7 +129,7 @@ public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
         int index = 0;
         foreach (Chord chord in chordList)
         {
-            Chord newChord = new Chord(chord.getNoteType(), Chord.getChordTypeFromId(chord.getChordTypeId()));
+            Chord newChord = new Chord(chord.GetNoteType(), Chord.getChordTypeFromId(chord.GetChordTypeId()));
             chordList[index] = newChord;
             index++;
         }

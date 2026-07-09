@@ -23,9 +23,4 @@ public class PlayingStringMemory
     {
         return stringStreamList[stringId];
     }
-
-    // Java-style wrappers
-    public void remember(int stringId, int streamId) => Remember(stringId, streamId);
-    public int getStreamIdFromString(int stringId) => GetStreamIdFromString(stringId);
-
 }

@@ -8,33 +8,33 @@ namespace VirtuoPhone.Models;
 
 public class Piano : Instrument
 {
-    public Piano(Context context) : base(context)
+    public Piano()
     {
     }
 
     protected void BoadSamples()
     {
-        addSample(new Note(Note.E, 0), R.Raw.pianoe0);
-        addSample(new Note(Note.A, 0), R.Raw.pianoa0);
-        addSample(new Note(Note.D, 1), R.Raw.pianod1);
-        addSample(new Note(Note.G, 1), R.Raw.pianog1);
-        addSample(new Note(Note.B, 1), R.Raw.pianob1);
-        addSample(new Note(Note.E, 2), R.Raw.pianoe2);
-        addSample(new Note(Note.A, 2), R.Raw.pianoa2);
-        addSample(new Note(Note.D, 3), R.Raw.pianod3);
-        addSample(new Note(Note.G, 3), R.Raw.pianog3);
-        addSample(new Note(Note.B, 3), R.Raw.pianob3);
-        addSample(new Note(Note.E, 4), R.Raw.pianoe4);
+        AddSample(new Note(Note.E, 0), R.Raw.pianoe0);
+        AddSample(new Note(Note.A, 0), R.Raw.pianoa0);
+        AddSample(new Note(Note.D, 1), R.Raw.pianod1);
+        AddSample(new Note(Note.G, 1), R.Raw.pianog1);
+        AddSample(new Note(Note.B, 1), R.Raw.pianob1);
+        AddSample(new Note(Note.E, 2), R.Raw.pianoe2);
+        AddSample(new Note(Note.A, 2), R.Raw.pianoa2);
+        AddSample(new Note(Note.D, 3), R.Raw.pianod3);
+        AddSample(new Note(Note.G, 3), R.Raw.pianog3);
+        AddSample(new Note(Note.B, 3), R.Raw.pianob3);
+        AddSample(new Note(Note.E, 4), R.Raw.pianoe4);
     }
 
-    protected void LoadDrone(Context context)
+    protected void LoadDrone()
     {
         //setDrone(new Drone(Note.E, R.raw.violine2, 0.3f), context);
     }
 
     protected int BuildMinPitchToPlay()
     {
-        return new Note(Note.CSharp, 0).getPitch();
+        return new Note(Note.CSharp, 0).GetPitch();
     }
 
     protected int BuildStringCount()

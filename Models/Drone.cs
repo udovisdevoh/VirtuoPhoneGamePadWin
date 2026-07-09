@@ -6,6 +6,8 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
+#warning Cleanup en cours, rendu à ce fichier, faire le cleanup pour le reste aussi
+
 public class Drone
 {
     private bool _isLazyHarmonic = false;
@@ -48,11 +50,11 @@ public class Drone
         this.volumeAdjustSpeedMultiplicator = volumeAdjustSpeedMultiplicator;
     }
 
-    public void onPlayNoteUpdate(SoundPool soundPool, GuitarPreset guitarPreset, Point coordinates)
+    public void OnPlayNoteUpdate(SoundPool soundPool, GuitarPreset guitarPreset, Point coordinates)
     {
         int droneFundamentalNoteType = currentChord;
 
-        int chordFundamentalNoteType = guitarPreset.getChordFundamentalNoteTypeAt(coordinates);
+        int chordFundamentalNoteType = guitarPreset.GetChordFundamentalNoteTypeAt(coordinates);
 
         if (isMinimizePitchShift())
         {
@@ -61,7 +63,7 @@ public class Drone
 
         bool isDroneNeedToChangeForChord;
 
-        setVolume(soundPool, sample.getVolume());
+        SetVolume(soundPool, sample.GetVolume());
 
         if (isLazyHarmonic())
         {
@@ -76,7 +78,7 @@ public class Drone
         if (!isPlaying() || isDroneNeedToChangeForChord)
         {
 
-            setCurrentChord(chordFundamentalNoteType);
+            SetCurrentChord(chordFundamentalNoteType);
 
             if (isPlaying())
             setPitch(soundPool, chordFundamentalNoteType);
@@ -85,20 +87,20 @@ public class Drone
         }
     }
 
-    private void setVolume(SoundPool soundPool, float volumeToSet)
+    private void SetVolume(SoundPool soundPool, float volumeToSet)
     {
         volume = volumeToSet;
         if (streamId > 0)
         soundPool.setVolume(streamId, volume, volume);
     }
 
-    public void onTickUpdate(SoundPool soundPool)
+    public void OnTickUpdate(SoundPool soundPool)
     {
-        adjustPicth(soundPool);
-        autoAdjustVolumeDecreaseWithTime(soundPool);
+        AdjustPicth(soundPool);
+        AutoAdjustVolumeDecreaseWithTime(soundPool);
     }
 
-    private void autoAdjustVolumeDecreaseWithTime(SoundPool soundPool)
+    private void AutoAdjustVolumeDecreaseWithTime(SoundPool soundPool)
     {
         if (volume > 0 && volumeAdjustSpeedMultiplicator > 0f)
         {
@@ -109,7 +111,7 @@ public class Drone
         }
     }
 
-    private void adjustPicth(SoundPool soundPool)
+    private void AdjustPicth(SoundPool soundPool)
     {
         if (rate < targetRate && pitchAdjustSpeedMultiplicator > 0f)
         {
@@ -119,7 +121,7 @@ public class Drone
             rate = targetRate;
 
             if (streamId > 0)
-            soundPool.setRate(streamId, rate);
+            soundPool.SetRate(streamId, rate);
 
         }
         else if (rate > targetRate && pitchAdjustSpeedMultiplicator > 0f)
@@ -130,11 +132,11 @@ public class Drone
             rate = targetRate;
 
             if (streamId > 0)
-            soundPool.setRate(streamId, rate);
+            soundPool.SetRate(streamId, rate);
         }
     }
 
-    public Sample getSample()
+    public Sample GetSample()
     {
         return sample;
     }
@@ -144,7 +146,7 @@ public class Drone
         return currentChord;
     }
 
-    public void setCurrentChord(int currentChord)
+    public void SetCurrentChord(int currentChord)
     {
         this.currentChord = currentChord;
     }
@@ -154,7 +156,7 @@ public class Drone
         return streamId;
     }
 
-    public void setStreamId(int streamId)
+    public void SetStreamId(int streamId)
     {
         this.streamId = streamId;
     }
@@ -166,7 +168,7 @@ public class Drone
 
     public int GetClosestHarmonizedPitchToOriginalSample(int chordFundamentalNoteType)
     {
-        int originalSampleFundamental = sample.getOriginalPitch() % 12;
+        int originalSampleFundamental = sample.GetOriginalPitch() % 12;
 
         int bestHarmonizedFundamental = originalSampleFundamental;
 
@@ -206,10 +208,10 @@ public class Drone
         return difference;
     }
 
-    public void stop(SoundPool soundPool)
+    public void Stop(SoundPool soundPool)
     {
         if (streamId > 0)
-        soundPool.stop(streamId);
+        soundPool.Stop(streamId);
 
         streamId = -1;
         rate = 1f;
@@ -217,13 +219,13 @@ public class Drone
 
     public void setPitch(SoundPool soundPool, int desiredPitch)
     {
-        targetRate = getSample().getPitchMultiplicator(desiredPitch, 0f);
+        targetRate = GetSample().GetPitchMultiplicator(desiredPitch, 0f);
         if (pitchAdjustSpeedMultiplicator <= 0f)
         {
             rate = targetRate;
             if (streamId > 0)
             {
-                soundPool.setRate(streamId, rate);
+                soundPool.SetRate(streamId, rate);
             }
         }
     }
@@ -240,10 +242,10 @@ public class Drone
         while (desiredPitch - originalPitch < -6)
         desiredPitch += 12;
 
-        rate = sample.getPitchMultiplicator(desiredPitch, 0f);
+        rate = sample.GetPitchMultiplicator(desiredPitch, 0f);
         targetRate = rate;
-        streamId = soundPool.play(sample.getSoundId(), sample.getVolume(), sample.getVolume(), 1, -1, rate);
-        volume = sample.getVolume();
+        streamId = soundPool.Play(sample.GetSoundId(), sample.GetVolume(), sample.GetVolume(), 1, -1, rate);
+        volume = sample.GetVolume();
     }
 
     public bool isLazyHarmonic()
@@ -261,12 +263,12 @@ public class Drone
         return streamId > 0;
     }
 
-    public void isLazyHarmonic(bool isLazyHarmonic)
+    public void IsLazyHarmonic(bool isLazyHarmonic)
     {
         this._isLazyHarmonic = isLazyHarmonic;
     }
 
-    public void isMinimizePitchShift(bool isMinimizePitchShift)
+    public void IsMinimizePitchShift(bool isMinimizePitchShift)
     {
         this._isMinimizePitchShift = isMinimizePitchShift;
     }

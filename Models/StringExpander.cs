@@ -26,12 +26,12 @@ public class StringExpander
 
             Note newNote = new Note(rarestNote);
 
-            int lastPitch = chord.lastPitch();
+            int lastPitch = chord.LastPitch();
 
-            while (chord.containsExact(newNote) || newNote.getPitch() <= lastPitch)
-            newNote.setPitch(newNote.getPitch() + 12);
+            while (chord.ContainsExact(newNote) || newNote.GetPitch() <= lastPitch)
+            newNote.SetPitch(newNote.GetPitch() + 12);
 
-            chord.addNote(newNote);
+            chord.AddNote(newNote);
 
             stringCountToAdd--;
         }
@@ -41,7 +41,7 @@ public class StringExpander
     {
         int stringCountToRemove = chord.Count - desiredStringCount;
 
-        int averagePitch = chord.getAveragePitch();
+        int averagePitch = chord.GetAveragePitch();
 
         while (stringCountToRemove > 0)
         {
@@ -60,9 +60,9 @@ public class StringExpander
 
         foreach (Note note  in chord)
         {
-            if (note.getPitch() % 12 == noteType)
+            if (note.GetPitch() % 12 == noteType)
             {
-                currentDifference = Math.Abs(note.getPitch() - averagePitch);
+                currentDifference = Math.Abs(note.GetPitch() - averagePitch);
                 if (currentDifference > largestDifference)
                 {
                     mostExtremeNote = note;
@@ -84,7 +84,7 @@ public class StringExpander
             {
                 if (note != null)
                 {
-                    int notePitch = note.getPitch() % 12;
+                    int notePitch = note.GetPitch() % 12;
                     if (listNoteTypeCount.ContainsKey(notePitch))
                     {
                         listNoteTypeCount[notePitch] = listNoteTypeCount[notePitch] + 1;
@@ -122,7 +122,7 @@ public class StringExpander
             {
                 if (note != null)
                 {
-                    int notePitch = note.getPitch() % 12;
+                    int notePitch = note.GetPitch() % 12;
                     if (listNoteTypeCount.ContainsKey(notePitch))
                     {
                         listNoteTypeCount[notePitch] = listNoteTypeCount[notePitch] + 1;
@@ -154,7 +154,7 @@ public class StringExpander
     {
         foreach (Note note  in chord)
         {
-            note.setPitch(note.getPitch() - 12);
+            note.SetPitch(note.GetPitch() - 12);
         }
     }
 }

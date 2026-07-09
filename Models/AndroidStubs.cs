@@ -5,8 +5,6 @@ using System.Collections.Generic;
 
 // Minimal stubs for Android/Audio classes referenced by converted code.
 
-public class Context { }
-
 public static class AudioManager
 {
     public const int STREAM_MUSIC = 3;
@@ -17,19 +15,19 @@ public class SoundPool
     private int nextId = 1;
     public SoundPool(int polyphony, int streamType, int srcQuality) { }
 
-    public int load(Context context, int resourceId, int priority) => nextId++;
-    public int play(int soundId, float leftVolume, float rightVolume, int priority, int loop, float rate) => nextId++;
-    public void stop(int streamId) { }
+    public int Load(int resourceId, int priority) => nextId++;
+    public int Play(int soundId, float leftVolume, float rightVolume, int priority, int loop, float rate) => nextId++;
+    public void Stop(int streamId) { }
     public void setVolume(int streamId, float left, float right) { }
-    public void setRate(int streamId, float rate) { }
-    public void release() { }
+    public void SetRate(int streamId, float rate) { }
+    public void Release() { }
 }
 
 public class PointerMemory
 {
     private List<int> streams = new List<int>();
-    public IEnumerable<int> getStreamList() => streams;
-    public void clearStreamList() => streams.Clear();
+    public IEnumerable<int> GetStreamList() => streams;
+    public void ClearStreamList() => streams.Clear();
 }
 
 public class AppController
@@ -45,27 +43,25 @@ namespace VirtuoPhone.Models.Instruments
     // Minimal concrete Instrument used as a safe fallback by converted code.
     public class DummyInstrument : Instrument
     {
-        public DummyInstrument() : base(new Context()) { }
+        protected override bool BuildIsAutoLoopKeepNoteUntilNewNote() => false;
 
-        protected override bool buildIsAutoLoopKeepNoteUntilNewNote() => false;
+        protected override bool BuildIsDroneMinimizePitchShift() => false;
 
-        protected override bool buildIsDroneMinimizePitchShift() => false;
+        protected override bool BuildIsLazyHarmonicDrone() => false;
 
-        protected override bool buildIsLazyHarmonicDrone() => false;
+        protected override bool BuildIsPitchBend() => false;
 
-        protected override bool buildIsPitchBend() => false;
+        protected override void LoadDrone() { }
 
-        protected override void loadDrone(Context context) { }
+        protected override bool BuildIsAutoLoop() => false;
 
-        protected override bool buildIsAutoLoop() => false;
+        protected override bool BuildIsMuteOnChangeFretSameString() => false;
 
-        protected override bool buildIsMuteOnChangeFretSameString() => false;
+        protected override int BuildStringCount() => 6;
 
-        protected override int buildStringCount() => 6;
+        protected override int BuildMinPitchToPlay() => 0;
 
-        protected override int buildMinPitchToPlay() => 0;
-
-        protected override void loadSamples() { }
+        protected override void LoadSamples() { }
     }
 }
 

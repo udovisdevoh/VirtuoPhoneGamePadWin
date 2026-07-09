@@ -26,29 +26,29 @@ public abstract class Instrument : IEnumerable<Sample>
 
     private int polyphony;
 
-    private bool _isMuteOnChangeFretSameString;
+    private bool isMuteOnChangeFretSameString;
 
-    private bool _isAutoLoopKeepNoteUntilNewNote;
+    private bool isAutoLoopKeepNoteUntilNewNote;
 
-    private bool _isPitchBend;
+    private bool isPitchBend;
 
-    private bool _isAutoLoop;
+    private bool isAutoLoop;
 
-    public Instrument(Context context)
+    public Instrument()
     {
         random = new Random();
-        stringCount = buildStringCount();
-        _isMuteOnChangeFretSameString = buildIsMuteOnChangeFretSameString();
-        _isAutoLoop = buildIsAutoLoop();
-        _isAutoLoopKeepNoteUntilNewNote = buildIsAutoLoopKeepNoteUntilNewNote();
-        _isPitchBend = buildIsPitchBend();
+        stringCount = BuildStringCount();
+        isMuteOnChangeFretSameString = BuildIsMuteOnChangeFretSameString();
+        isAutoLoop = BuildIsAutoLoop();
+        isAutoLoopKeepNoteUntilNewNote = BuildIsAutoLoopKeepNoteUntilNewNote();
+        isPitchBend = BuildIsPitchBend();
         polyphony = stringCount * 2;
         soundPool = new SoundPool(polyphony, AudioManager.STREAM_MUSIC, 0);
         //streamIdByStringBeingPlayed = new int[AppController.STRING_COUNT];
         multiSampleList = new MultiSampleSet[128];
         sampleSet = new HashSet<Sample>();
         playingStringMemory = new PlayingStringMemory(stringCount);
-        loadSamples();
+        LoadSamples();
 
         for (int i = 0; i < multiSampleList.Length; i++)
         {
@@ -56,79 +56,83 @@ public abstract class Instrument : IEnumerable<Sample>
             {
                 foreach (Sample sample in multiSampleList[i])
                 {
-                    int soundId = soundPool.load(context, sample.getResourceId(), 1);
-                    sample.setSoundId(soundId);
+                    int soundId = soundPool.Load(sample.GetResourceId(), 1);
+                    sample.SetSoundId(soundId);
                 }
             }
         }
 
-        interpolateBlankSamples();
-        minPitchToPlay = buildMinPitchToPlay();
+        InterpolateBlankSamples();
+        minPitchToPlay = BuildMinPitchToPlay();
 
-        loadDrone(context);
+        LoadDrone();
         if (drone != null)
         {
-            drone.isLazyHarmonic(buildIsLazyHarmonicDrone());
-            drone.isMinimizePitchShift(buildIsDroneMinimizePitchShift());
+            drone.IsLazyHarmonic(BuildIsLazyHarmonicDrone());
+            drone.IsMinimizePitchShift(BuildIsDroneMinimizePitchShift());
         }
     }
 
-    protected virtual bool buildIsAutoLoopKeepNoteUntilNewNote() => false;
+    protected virtual bool BuildIsAutoLoopKeepNoteUntilNewNote() => false;
 
-    protected virtual bool buildIsDroneMinimizePitchShift() => false;
+    protected virtual bool BuildIsDroneMinimizePitchShift() => false;
 
-    protected virtual bool buildIsLazyHarmonicDrone() => false;
+    protected virtual bool BuildIsLazyHarmonicDrone() => false;
 
-    protected virtual bool buildIsPitchBend() => false;
+    protected virtual bool BuildIsPitchBend() => false;
 
-    protected virtual void loadDrone(Context context) { }
+    protected virtual void LoadDrone() { }
 
-    protected virtual bool buildIsAutoLoop() => false;
+    protected virtual bool BuildIsAutoLoop() => false;
 
-    protected virtual bool buildIsMuteOnChangeFretSameString() => false;
+    protected virtual bool BuildIsMuteOnChangeFretSameString() => false;
 
-    protected virtual int buildStringCount() => 6;
+    protected virtual int BuildStringCount() => 6;
 
     /**
     * @return below that pitch, remain silent
     */
-    protected virtual int buildMinPitchToPlay() => 0;
+    protected virtual int BuildMinPitchToPlay() => 0;
 
-    protected void addSample(Note note, int resourceId)
+    protected void AddSample(Note note, int resourceId)
     {
-        addSample(note, resourceId, 1.0f);
+        AddSample(note, resourceId, 1.0f);
     }
 
     /**
     * @param note note
     * @param resourceId resource id
     */
-    protected void addSample(Note note, int resourceId, float volume)
+    protected void AddSample(Note note, int resourceId, float volume)
     {
         Sample sample = new Sample(note, resourceId, volume);
 
-        int pitch = sample.getOriginalPitch();
+        int pitch = sample.GetOriginalPitch();
 
         if (pitch > 127 || pitch < 0)
-        return;
+        {
+            return;
+        }
 
         if (multiSampleList[pitch] == null)
-        multiSampleList[pitch] = new MultiSampleSet();
+        {
+            multiSampleList[pitch] = new MultiSampleSet();
+        }
 
-        multiSampleList[pitch].addSample(sample);
+        multiSampleList[pitch].AddSample(sample);
         sampleSet.Add(sample);
     }
 
-    protected void setDrone(Drone drone, Context context)
+    protected void setDrone(Drone drone)
     {
         this.drone = drone;
-        int soundId = soundPool.load(context, drone.getSample().getResourceId(), 1);
-        drone.getSample().setSoundId(soundId);
+        int soundId = soundPool.Load(drone.GetSample().GetResourceId(), 1);
+        drone.GetSample().SetSoundId(soundId);
     }
 
-    protected virtual void loadSamples() { }
+    protected virtual void LoadSamples() { }
 
-    private void interpolateBlankSamples()
+    private void InterpolateBlankSamples()
     {
         for (int i = 0; i < 128; i++)
         {
@@ -140,7 +144,7 @@ public abstract class Instrument : IEnumerable<Sample>
                 }
                 else if (i == 0)
                 {
-                    multiSampleList[i] = getLowestMultiSampleSet();
+                    multiSampleList[i] = GetLowestMultiSampleSet();
                 }
             }
         }
@@ -149,17 +153,21 @@ public abstract class Instrument : IEnumerable<Sample>
     /**
     * @return sample with the lowest pitch
     */
-    private MultiSampleSet getLowestMultiSampleSet()
+    private MultiSampleSet GetLowestMultiSampleSet()
     {
         for (int i = 0; i < 128; i++)
-        if (multiSampleList[i] != null)
-        return multiSampleList[i];
+        {
+            if (multiSampleList[i] != null)
+            {
+                return multiSampleList[i];
+            }
+        }
         return null;
     }
 
-    public void release()
+    public void Release()
     {
-        soundPool.release();
+        soundPool.Release();
     }
 
     public IEnumerator<Sample> GetEnumerator()
@@ -167,119 +175,139 @@ public abstract class Instrument : IEnumerable<Sample>
         return sampleSet.GetEnumerator();
     }
 
-    public int play(int desiredPitch, int stringId, float pitchBend)
+    public int Play(int desiredPitch, int stringId, float pitchBend)
     {
         while (desiredPitch < 0)
-        desiredPitch += 12;
+        {
+            desiredPitch += 12;
+        }
 
         while (desiredPitch > 128)
-        desiredPitch -= 12;
+        {
+            desiredPitch -= 12;
+        }
 
         if (desiredPitch < minPitchToPlay)
-        return 0;
-
-        Sample sample = multiSampleList[desiredPitch].getRandomSample(random);
-        float rate = sample.getPitchMultiplicator(desiredPitch, pitchBend);
-
-        if (_isMuteOnChangeFretSameString)
         {
-            int previousStreamIdSameString = playingStringMemory.getStreamIdFromString(stringId);
+            return 0;
+        }
+
+        Sample sample = multiSampleList[desiredPitch].GetRandomSample(random);
+        float rate = sample.GetPitchMultiplicator(desiredPitch, pitchBend);
+
+        if (isMuteOnChangeFretSameString)
+        {
+            int previousStreamIdSameString = playingStringMemory.GetStreamIdFromString(stringId);
             if (previousStreamIdSameString != 0)
-            soundPool.stop(previousStreamIdSameString);
+            soundPool.Stop(previousStreamIdSameString);
         }
 
         int streamId;
 
-        if (_isAutoLoop)
-        streamId = soundPool.play(sample.getSoundId(), sample.getVolume(), sample.getVolume(), 1, -1, rate);
+        if (isAutoLoop)
+        {
+            streamId = soundPool.Play(sample.GetSoundId(), sample.GetVolume(), sample.GetVolume(), 1, -1, rate);
+        }
         else
-        streamId = soundPool.play(sample.getSoundId(), sample.getVolume(), sample.getVolume(), 1, 0, rate);
+        {
+            streamId = soundPool.Play(sample.GetSoundId(), sample.GetVolume(), sample.GetVolume(), 1, 0, rate);
+        }
 
 
-        if (_isMuteOnChangeFretSameString)
-        playingStringMemory.remember(stringId, streamId);
+        if (isMuteOnChangeFretSameString)
+        playingStringMemory.Remember(stringId, streamId);
 
         return streamId;
     }
 
-    public int play(Note note, int stringId, float pitchBend)
+    public int Play(Note note, int stringId, float pitchBend)
     {
-        if (note == null || note.getPitch() == -1)
-        return 0;
+        if (note == null || note.GetPitch() == -1)
+        {
+            return 0;
+        }
 
-        return play(note.getPitch(), stringId, pitchBend);
+        return Play(note.GetPitch(), stringId, pitchBend);
     }
 
-    public int getStringCount()
+    public int GetStringCount()
     {
         return stringCount;
     }
 
-    public bool isAutoLoop()
+    public bool IsAutoLoop()
     {
-        return _isAutoLoop;
+        return isAutoLoop;
     }
 
-    public void stop(int streamId)
+    public void Stop(int streamId)
     {
-        soundPool.stop(streamId);
+        soundPool.Stop(streamId);
     }
 
-    public Drone getDrone()
+    public Drone GetDrone()
     {
         return drone;
     }
 
-    public void stopDrone()
+    public void StopDrone()
     {
         if (drone != null)
-        drone.stop(soundPool);
-    }
-
-    public bool isPitchBend()
-    {
-        return _isPitchBend;
-    }
-
-    public void setStreamPitch(int streamId, Note note, float pitchBend)
-    {
-        if (streamId > 0)
         {
-            int desiredPitch = note.getPitch();
-
-            while (desiredPitch < 0)
-            desiredPitch += 12;
-
-            while (desiredPitch > 128)
-            desiredPitch -= 12;
-
-            if (desiredPitch < minPitchToPlay)
-            return;
-
-            Sample sample = multiSampleList[desiredPitch].getRandomSample(random);
-            float rate = sample.getPitchMultiplicator(desiredPitch, pitchBend);
-
-            soundPool.setRate(streamId, rate);
+            drone.Stop(soundPool);
         }
     }
 
-    public SoundPool getSoundPool()
+    public bool IsPitchBend()
+    {
+        return isPitchBend;
+    }
+
+    public void SetStreamPitch(int streamId, Note note, float pitchBend)
+    {
+        if (streamId > 0)
+        {
+            int desiredPitch = note.GetPitch();
+
+            while (desiredPitch < 0)
+            {
+                desiredPitch += 12;
+            }
+
+            while (desiredPitch > 128)
+            {
+                desiredPitch -= 12;
+            }
+
+            if (desiredPitch < minPitchToPlay)
+            {
+                return;
+            }
+
+            Sample sample = multiSampleList[desiredPitch].GetRandomSample(random);
+            float rate = sample.GetPitchMultiplicator(desiredPitch, pitchBend);
+
+            soundPool.SetRate(streamId, rate);
+        }
+    }
+
+    public SoundPool GetSoundPool()
     {
         return soundPool;
     }
 
-    public bool isAutoLoopKeepNoteUntilNewNote()
+    public bool IsAutoLoopKeepNoteUntilNewNote()
     {
-        return _isAutoLoopKeepNoteUntilNewNote;
+        return isAutoLoopKeepNoteUntilNewNote;
     }
 
-    public void stopAllNotes(PointerMemory pointerMemory)
+    public void StopAllNotes(PointerMemory pointerMemory)
     {
-        foreach (int streamIdToMute in pointerMemory.getStreamList())
+        foreach (int streamIdToMute in pointerMemory.GetStreamList())
         {
-            stop(streamIdToMute);
+            Stop(streamIdToMute);
         }
-        pointerMemory.clearStreamList();
+        pointerMemory.ClearStreamList();
     }
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
