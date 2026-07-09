@@ -6,9 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
-/**
-* @author Guillaume
-*/
 public class Sample
 {
     private int originalPitch;

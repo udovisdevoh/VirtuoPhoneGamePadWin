@@ -11,7 +11,7 @@ for p in root.rglob('*.cs'):
 print('Found', len(java_files), 'files')
 for p in java_files:
     text = p.read_text(encoding='utf-8')
-    text = text.replace('package com.virtuophone.models.instruments;', 'namespace VirtuoPhone.Models.Instruments;')
+    text = text.replace('package com.virtuophone.models.instruments;', 'namespace VirtuoPhone.Models;')
     text = text.replace('package com.virtuophone.models;', 'namespace VirtuoPhone.Models;')
     text = re.sub(r'^import .*;$', '', text, flags=re.MULTILINE)
     text = re.sub(r'@Override\s*\n', '', text)

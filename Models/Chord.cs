@@ -33,7 +33,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
         noteType = noteType % 12;
         switch (chordType)
         {
-            case add9:
+            case ChordType.add9:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.A, 3));
             noteList.Add(new Note(Note.D, 4));
@@ -41,7 +41,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.B, 4));
             noteList.Add(new Note(Note.G, 5));
             break;
-            case aug:
+            case ChordType.aug:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.DSharp, 4));
@@ -49,7 +49,23 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.B, 4));
             noteList.Add(new Note(Note.G, 5));
             break;
-            case aug9:
+            case ChordType.dim:
+            noteList.Add(new Note(Note.B, 3));
+            noteList.Add(new Note(Note.D, 4));
+            noteList.Add(new Note(Note.F, 4));
+            noteList.Add(new Note(Note.B, 4));
+            noteList.Add(new Note(Note.D, 5));
+            noteList.Add(new Note(Note.F, 5));
+            break;
+            case ChordType.dim7:
+            noteList.Add(new Note(Note.B, 3));
+            noteList.Add(new Note(Note.D, 4));
+            noteList.Add(new Note(Note.F, 4));
+            noteList.Add(new Note(Note.GSharp, 4));
+            noteList.Add(new Note(Note.B, 4));
+            noteList.Add(new Note(Note.D, 5));
+            break;
+            case ChordType.aug9:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.A, 3));
             noteList.Add(new Note(Note.F, 4));
@@ -57,7 +73,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.DSharp, 5));
             noteList.Add(new Note(Note.A, 5));
             break;
-            case eleven:
+            case ChordType.eleven:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.D, 4));
@@ -65,7 +81,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.C, 5));
             noteList.Add(new Note(Note.F, 5));
             break;
-            case five:
+            case ChordType.five:
             if (noteType == Note.G)
             {
                 noteList.Add(new Note(Note.E, 3));
@@ -85,7 +101,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
                 noteList.Add(new Note(Note.B, 5));
             }
             break;
-            case m:
+            case ChordType.m:
             if (noteType == Note.A)
             {
                 noteList.Add(new Note(Note.A, 2));
@@ -159,7 +175,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
                 noteList.Add(new Note(Note.E, 5));
             }
             break;
-            case m11:
+            case ChordType.m11:
             noteList.Add(new Note(Note.E, 3));
             noteList.Add(new Note(Note.A, 3));
             noteList.Add(new Note(Note.D, 4));
@@ -167,7 +183,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.B, 4));
             noteList.Add(new Note(Note.E, 5));
             break;
-            case m13:
+            case ChordType.m13:
             noteList.Add(new Note(Note.E, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.D, 4));
@@ -175,7 +191,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.CSharp, 5));
             noteList.Add(new Note(Note.FSharp, 5));
             break;
-            case m6:
+            case ChordType.m6:
             noteList.Add(new Note(Note.E, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.E, 4));
@@ -183,7 +199,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.CSharp, 5));
             noteList.Add(new Note(Note.E, 5));
             break;
-            case m7:
+            case ChordType.m7:
             if (noteType == Note.D)
             {
                 noteList.Add(new Note(Note.D, 2));
@@ -203,7 +219,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
                 noteList.Add(new Note(Note.E, 5));
             }
             break;
-            case m9:
+            case ChordType.m9:
             noteList.Add(new Note(Note.E, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.D, 4));
@@ -211,7 +227,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.B, 4));
             noteList.Add(new Note(Note.FSharp, 5));
             break;
-            case maj:
+            case ChordType.maj:
             /*noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.D, 4));
@@ -291,7 +307,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
                 noteList.Add(new Note(Note.C, 5));
             }
             break;
-            case maj13:
+            case ChordType.maj13:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.E, 4));
@@ -299,7 +315,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.D, 5));
             noteList.Add(new Note(Note.FSharp, 5));
             break;
-            case maj7:
+            case ChordType.maj7:
             noteList.Add(new Note(Note.C, 3));
             noteList.Add(new Note(Note.E, 3));
             noteList.Add(new Note(Note.G, 3));
@@ -307,7 +323,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.E, 4));
             noteList.Add(new Note(Note.G, 4));
             break;
-            case maj9:
+            case ChordType.maj9:
             noteList.Add(new Note(Note.E, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.FSharp, 4));
@@ -315,7 +331,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.DSharp, 5));
             noteList.Add(new Note(Note.GSharp, 5));
             break;
-            case mma:
+            case ChordType.mma:
             noteList.Add(new Note(Note.E, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.DSharp, 4));
@@ -323,7 +339,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.B, 4));
             noteList.Add(new Note(Note.E, 5));
             break;
-            case nine:
+            case ChordType.nine:
             noteList.Add(new Note(Note.E, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.D, 4));
@@ -331,7 +347,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.B, 4));
             noteList.Add(new Note(Note.FSharp, 5));
             break;
-            case nineSusFour:
+            case ChordType.nineSusFour:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.C, 4));
             noteList.Add(new Note(Note.F, 4));
@@ -339,7 +355,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.C, 5));
             noteList.Add(new Note(Note.F, 5));
             break;
-            case seven:
+            case ChordType.seven:
             if (noteType == Note.A)
             {
                 noteList.Add(new Note(Note.E, 3));
@@ -359,7 +375,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
                 noteList.Add(new Note(Note.E, 5));
             }
             break;
-            case sevenBFive:
+            case ChordType.sevenBFive:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.CSharp, 4));
             noteList.Add(new Note(Note.F, 4));
@@ -367,7 +383,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.CSharp, 5));
             noteList.Add(new Note(Note.G, 5));
             break;
-            case sevenBNine:
+            case ChordType.sevenBNine:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.D, 4));
@@ -375,7 +391,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.D, 5));
             noteList.Add(new Note(Note.F, 5));
             break;
-            case sevenSusFour:
+            case ChordType.sevenSusFour:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.D, 4));
             noteList.Add(new Note(Note.F, 4));
@@ -383,7 +399,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.D, 5));
             noteList.Add(new Note(Note.G, 5));
             break;
-            case six:
+            case ChordType.six:
             noteList.Add(new Note(Note.E, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.E, 4));
@@ -391,7 +407,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.CSharp, 5));
             noteList.Add(new Note(Note.E, 5));
             break;
-            case sixSlashNine:
+            case ChordType.sixSlashNine:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.E, 4));
@@ -399,7 +415,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.D, 5));
             noteList.Add(new Note(Note.G, 5));
             break;
-            case sus2:
+            case ChordType.sus2:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.A, 3));
             noteList.Add(new Note(Note.D, 4));
@@ -407,7 +423,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.D, 5));
             noteList.Add(new Note(Note.G, 5));
             break;
-            case sus4:
+            case ChordType.sus4:
             noteList.Add(new Note(Note.G, 3));
             noteList.Add(new Note(Note.D, 4));
             noteList.Add(new Note(Note.G, 4));
@@ -415,7 +431,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.D, 5));
             noteList.Add(new Note(Note.G, 5));
             break;
-            case thirteen:
+            case ChordType.thirteen:
             noteList.Add(new Note(Note.E, 3));
             noteList.Add(new Note(Note.B, 3));
             noteList.Add(new Note(Note.D, 4));
@@ -423,7 +439,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.CSharp, 5));
             noteList.Add(new Note(Note.FSharp, 5));
             break;
-            case ff_maj:
+            case ChordType.ff_maj:
             noteList.Add(new Note(Note.C, 1));
             noteList.Add(new Note(Note.D, 1));
             noteList.Add(new Note(Note.E, 1));
@@ -442,7 +458,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
             noteList.Add(new Note(Note.G, 4));
             noteList.Add(new Note(Note.C, 5));
             break;
-            case ff_min:
+            case ChordType.ff_min:
             noteList.Add(new Note(Note.C, 1));
             noteList.Add(new Note(Note.D, 1));
             noteList.Add(new Note(Note.EFlat, 1));
@@ -639,64 +655,68 @@ public class Chord : IEnumerable<Note>, IStringSerializable
     {
         switch (chordType)
         {
-            case maj:
+            case ChordType.maj:
             return 0;
-            case maj7:
+            case ChordType.maj7:
             return 1;
-            case maj9:
+            case ChordType.maj9:
             return 2;
-            case maj13:
+            case ChordType.maj13:
             return 3;
-            case m:
+            case ChordType.m:
             return 4;
-            case m6:
+            case ChordType.m6:
             return 5;
-            case m7:
+            case ChordType.m7:
             return 6;
-            case m9:
+            case ChordType.m9:
             return 7;
-            case m11:
+            case ChordType.m11:
             return 8;
-            case m13:
+            case ChordType.m13:
             return 9;
-            case mma:
+            case ChordType.mma:
             return 10;
-            case aug:
+            case ChordType.aug:
             return 11;
-            case aug9:
+            case ChordType.aug9:
             return 12;
-            case add9:
+            case ChordType.add9:
             return 13;
-            case sus2:
+            case ChordType.sus2:
             return 14;
-            case sus4:
+            case ChordType.sus4:
             return 15;
-            case five:
+            case ChordType.five:
             return 16;
-            case six:
+            case ChordType.six:
             return 17;
-            case sixSlashNine:
+            case ChordType.sixSlashNine:
             return 18;
-            case seven:
+            case ChordType.seven:
             return 19;
-            case sevenSusFour:
+            case ChordType.sevenSusFour:
             return 20;
-            case sevenBFive:
+            case ChordType.sevenBFive:
             return 21;
-            case sevenBNine:
+            case ChordType.sevenBNine:
             return 22;
-            case nine:
+            case ChordType.nine:
             return 23;
-            case nineSusFour:
+            case ChordType.nineSusFour:
             return 24;
-            case eleven:
+            case ChordType.eleven:
             return 25;
-            case thirteen:
+            case ChordType.thirteen:
             return 26;
-            case ff_maj:
+            case ChordType.ff_maj:
             return 27;
-            case ff_min:
+            case ChordType.ff_min:
             return 28;
+            case ChordType.dim:
+            return 29;
+            case ChordType.dim7:
+            return 30;
             default:
             return -1;
         }

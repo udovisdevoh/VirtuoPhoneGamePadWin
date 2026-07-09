@@ -4,13 +4,12 @@ using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
 
-namespace VirtuoPhone.Models.Instruments;
+namespace VirtuoPhone.Models;
 
 public class Bagpipes : Instrument
 {
-    public Bagpipes(Context context)
+    public Bagpipes(Context context) : base(context)
     {
-        base(context);
     }
 
     protected void loadSamples()

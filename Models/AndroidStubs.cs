@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+#warning Todo remove android stub and replace all of this will real code
+
 // Minimal stubs for Android/Audio classes referenced by converted code.
 
 public class Context { }
@@ -35,7 +37,7 @@ public class AppController
     public const int STRING_COUNT = 6;
     private static AppController instance = new AppController();
     public static AppController getAppController() => instance;
-    public VirtuoPhone.Models.Instruments.Instrument getInstrument() => new VirtuoPhone.Models.Instruments.DummyInstrument();
+    public VirtuoPhone.Models.Instrument getInstrument() => new VirtuoPhone.Models.Instruments.DummyInstrument();
 }
 
 namespace VirtuoPhone.Models.Instruments

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
 
-namespace VirtuoPhone.Models.Instruments;
+namespace VirtuoPhone.Models;
 public class SteelGuitar : Instrument
 {
     public SteelGuitar(Context context)

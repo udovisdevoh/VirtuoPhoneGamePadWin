@@ -77,8 +77,8 @@ public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
 
     public Note getNoteAt(Point coordinates)
     {
-        Chord chord = chordList[coordinates.y];
-        Note note = chord[coordinates.x];
+        Chord chord = chordList[coordinates.Y];
+        Note note = chord[coordinates.X];
         return note;
     }
 

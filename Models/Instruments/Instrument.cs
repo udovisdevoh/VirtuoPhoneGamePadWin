@@ -4,27 +4,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
 
-namespace VirtuoPhone.Models.Instruments;
+namespace VirtuoPhone.Models;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
-* @author Guillaume
-* Instrucment (collection of samples)
-*/
 public abstract class Instrument : IEnumerable<Sample>
 {
     private Random random;
@@ -200,7 +181,7 @@ public abstract class Instrument : IEnumerable<Sample>
         Sample sample = multiSampleList[desiredPitch].getRandomSample(random);
         float rate = sample.getPitchMultiplicator(desiredPitch, pitchBend);
 
-        if (isMuteOnChangeFretSameString)
+        if (_isMuteOnChangeFretSameString)
         {
             int previousStreamIdSameString = playingStringMemory.getStreamIdFromString(stringId);
             if (previousStreamIdSameString != 0)
@@ -209,13 +190,13 @@ public abstract class Instrument : IEnumerable<Sample>
 
         int streamId;
 
-        if (isAutoLoop)
+        if (_isAutoLoop)
         streamId = soundPool.play(sample.getSoundId(), sample.getVolume(), sample.getVolume(), 1, -1, rate);
         else
         streamId = soundPool.play(sample.getSoundId(), sample.getVolume(), sample.getVolume(), 1, 0, rate);
 
 
-        if (isMuteOnChangeFretSameString)
+        if (_isMuteOnChangeFretSameString)
         playingStringMemory.remember(stringId, streamId);
 
         return streamId;
