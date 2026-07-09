@@ -8,7 +8,7 @@ namespace VirtuoPhone.Models;
 
 public class Bagpipes : Instrument
 {
-    protected void LoadSamples()
+    protected override void LoadSamples()
     {
         AddSample(new Note(Note.E, 2), R.Raw.bagpipese0);
         AddSample(new Note(Note.A, 2), R.Raw.bagpipesa0);
@@ -19,47 +19,47 @@ public class Bagpipes : Instrument
         AddSample(new Note(Note.A, 4), R.Raw.bagpipesa2);
     }
 
-    protected void LoadDrone()
+    protected override void LoadDrone()
     {
         setDrone(new Drone(Note.A, R.Raw.bagpipesdroneloopa, 1f, 1.2f, 0f));
     }
 
-    protected int BuildMinPitchToPlay()
+    protected override int BuildMinPitchToPlay()
     {
         return new Note(Note.CSharp, 0).GetPitch();
     }
 
-    protected int BuildStringCount()
+    protected override int BuildStringCount()
     {
         return 6;
     }
 
-    protected bool BuildIsLazyHarmonicDrone()
+    protected override bool BuildIsLazyHarmonicDrone()
     {
         return false;
     }
 
-    protected bool BuildIsDroneMinimizePitchShift()
+    protected override bool BuildIsDroneMinimizePitchShift()
     {
         return false;
     }
 
-    protected bool BuildIsMuteOnChangeFretSameString()
+    protected override bool BuildIsMuteOnChangeFretSameString()
     {
         return true;
     }
 
-    protected bool BuildIsAutoLoop()
+    protected override bool BuildIsAutoLoop()
     {
         return true;
     }
 
-    protected bool BuildIsPitchBend()
+    protected override bool BuildIsPitchBend()
     {
         return false;
     }
 
-    protected bool BuildIsAutoLoopKeepNoteUntilNewNote()
+    protected override bool BuildIsAutoLoopKeepNoteUntilNewNote()
     {
         return true;
     }

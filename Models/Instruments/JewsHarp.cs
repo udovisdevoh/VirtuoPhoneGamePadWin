@@ -12,7 +12,7 @@ public class JewsHarp : Instrument
     {
     }
 
-    protected void LoadSamples()
+    protected override void LoadSamples()
     {
         Note note;
 
@@ -49,47 +49,47 @@ public class JewsHarp : Instrument
         AddSample(note, R.Raw.guimb26);
     }
 
-    protected void LoadDrone()
+    protected override void LoadDrone()
     {
         //setDrone(new Drone(Note.E, R.raw.violine2, 0.3f), context);
     }
 
-    protected int BuildMinPitchToPlay()
+    protected override int BuildMinPitchToPlay()
     {
         return new Note(Note.CSharp, 0).GetPitch();
     }
 
-    protected int BuildStringCount()
+    protected override int BuildStringCount()
     {
         return 6;
     }
 
-    protected bool BuildIsMuteOnChangeFretSameString()
+    protected override bool BuildIsMuteOnChangeFretSameString()
     {
         return false;
     }
 
-    protected bool BuildIsAutoLoop()
+    protected override bool BuildIsAutoLoop()
     {
         return false;
     }
 
-    protected bool BuildIsPitchBend()
+    protected override bool BuildIsPitchBend()
     {
         return false;
     }
 
-    protected bool BuildIsLazyHarmonicDrone()
+    protected override bool BuildIsLazyHarmonicDrone()
     {
         return false;
     }
 
-    protected bool BuildIsDroneMinimizePitchShift()
+    protected override bool BuildIsDroneMinimizePitchShift()
     {
         return false;
     }
 
-    protected bool BuildIsAutoLoopKeepNoteUntilNewNote()
+    protected override bool BuildIsAutoLoopKeepNoteUntilNewNote()
     {
         return false;
     }

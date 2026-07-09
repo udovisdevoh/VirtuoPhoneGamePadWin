@@ -12,7 +12,7 @@ public class Synth : Instrument
     {
     }
 
-    protected void LoadSamples()
+    protected override void LoadSamples()
     {
         AddSample(new Note(Note.E, 0), R.Raw.synthe0);
         AddSample(new Note(Note.A, 0), R.Raw.syntha0);
@@ -27,47 +27,47 @@ public class Synth : Instrument
         AddSample(new Note(Note.E, 4), R.Raw.synthe4);
     }
 
-    protected int BuildMinPitchToPlay()
+    protected override int BuildMinPitchToPlay()
     {
         return new Note(Note.CSharp, 0).GetPitch();
     }
 
-    protected int BuildStringCount()
+    protected override int BuildStringCount()
     {
         return 8;
     }
 
-    protected bool BuildIsMuteOnChangeFretSameString()
+    protected override bool BuildIsMuteOnChangeFretSameString()
     {
         return false;
     }
 
-    protected bool BuildIsAutoLoop()
+    protected override bool BuildIsAutoLoop()
     {
         return false;
     }
 
-    protected void LoadDrone()
+    protected override void LoadDrone()
     {
         setDrone(new Drone(Note.E, R.Raw.violine2, 0.5f, 1.035f, 1.005f));
     }
 
-    protected bool BuildIsPitchBend()
+    protected override bool BuildIsPitchBend()
     {
         return false;
     }
 
-    protected bool BuildIsLazyHarmonicDrone()
+    protected override bool BuildIsLazyHarmonicDrone()
     {
         return false;
     }
 
-    protected bool BuildIsDroneMinimizePitchShift()
+    protected override bool BuildIsDroneMinimizePitchShift()
     {
         return false;
     }
 
-    protected bool BuildIsAutoLoopKeepNoteUntilNewNote()
+    protected override bool BuildIsAutoLoopKeepNoteUntilNewNote()
     {
         return false;
     }

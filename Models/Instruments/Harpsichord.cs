@@ -8,7 +8,7 @@ namespace VirtuoPhone.Models;
 
 public class Harpsichord : Instrument
 {
-    protected void LoadSamples()
+    protected override void LoadSamples()
     {
         AddSample(new Note(Note.E, 0), R.Raw.harpsichordf0);
         AddSample(new Note(Note.A, 0), R.Raw.harpsichorda0);
@@ -23,47 +23,47 @@ public class Harpsichord : Instrument
         AddSample(new Note(Note.E, 4), R.Raw.harpsichorde4);
     }
 
-    protected int BuildMinPitchToPlay()
+    protected override int BuildMinPitchToPlay()
     {
         return new Note(Note.CSharp, 0).GetPitch();
     }
 
-    protected int BuildStringCount()
+    protected override int BuildStringCount()
     {
         return 8;
     }
 
-    protected bool BuildIsMuteOnChangeFretSameString()
+    protected override bool BuildIsMuteOnChangeFretSameString()
     {
         return false;
     }
 
-    protected bool BuildIsAutoLoop()
+    protected override bool BuildIsAutoLoop()
     {
         return false;
     }
 
-    protected void LoadDrone()
+    protected override void LoadDrone()
     {
         //no drone
     }
 
-    protected bool BuildIsPitchBend()
+    protected override bool BuildIsPitchBend()
     {
         return false;
     }
 
-    protected bool BuildIsLazyHarmonicDrone()
+    protected override bool BuildIsLazyHarmonicDrone()
     {
         return false;
     }
 
-    protected bool BuildIsDroneMinimizePitchShift()
+    protected override bool BuildIsDroneMinimizePitchShift()
     {
         return false;
     }
 
-    protected bool BuildIsAutoLoopKeepNoteUntilNewNote()
+    protected override bool BuildIsAutoLoopKeepNoteUntilNewNote()
     {
         return false;
     }

@@ -73,26 +73,26 @@ public abstract class Instrument : IEnumerable<Sample>
         }
     }
 
-    protected virtual bool BuildIsAutoLoopKeepNoteUntilNewNote() => false;
+    protected abstract bool BuildIsAutoLoopKeepNoteUntilNewNote();
 
-    protected virtual bool BuildIsDroneMinimizePitchShift() => false;
+    protected abstract bool BuildIsDroneMinimizePitchShift();
 
-    protected virtual bool BuildIsLazyHarmonicDrone() => false;
+    protected abstract bool BuildIsLazyHarmonicDrone();
 
-    protected virtual bool BuildIsPitchBend() => false;
+    protected abstract bool BuildIsPitchBend();
 
-    protected virtual void LoadDrone() { }
+    protected abstract void LoadDrone();
 
-    protected virtual bool BuildIsAutoLoop() => false;
+    protected abstract bool BuildIsAutoLoop();
 
-    protected virtual bool BuildIsMuteOnChangeFretSameString() => false;
+    protected abstract bool BuildIsMuteOnChangeFretSameString();
 
-    protected virtual int BuildStringCount() => 6;
+    protected abstract int BuildStringCount();
 
     /**
     * @return below that pitch, remain silent
     */
-    protected virtual int BuildMinPitchToPlay() => 0;
+    protected abstract int BuildMinPitchToPlay();
 
     protected void AddSample(Note note, int resourceId)
     {
@@ -130,7 +130,7 @@ public abstract class Instrument : IEnumerable<Sample>
         drone.GetSample().SetSoundId(soundId);
     }
 
-    protected virtual void LoadSamples() { }
+    protected abstract void LoadSamples();
 
     private void InterpolateBlankSamples()
     {

@@ -7,7 +7,7 @@ using System.Drawing;
 namespace VirtuoPhone.Models;
 public class Sitar : Instrument
 {
-    protected void LoadSamples()
+    protected override void LoadSamples()
     {
         AddSample(new Note(Note.E, 1), R.Raw.sitaree2);
         AddSample(new Note(Note.A, 1), R.Raw.sitarea2);
@@ -24,48 +24,48 @@ public class Sitar : Instrument
         AddSample(new Note(Note.E, 5), R.Raw.sitaree6, 0.2f);
     }
 
-    protected void LoadDrone()
+    protected override void LoadDrone()
     {
         setDrone(new Drone(Note.CSharp, R.Raw.tampuracsharpshort, 0.3f, 1.2f, 1.01f));
         //setDrone(new Drone(Note.C, R.raw.sitardroneshortc, 0.3f, 1.035f), context);
     }
 
-    protected bool BuildIsLazyHarmonicDrone()
+    protected override bool BuildIsLazyHarmonicDrone()
     {
         return true;
     }
 
-    protected bool BuildIsDroneMinimizePitchShift()
+    protected override bool BuildIsDroneMinimizePitchShift()
     {
         return false;
     }
 
-    protected int BuildMinPitchToPlay()
+    protected override int BuildMinPitchToPlay()
     {
         return new Note(Note.CSharp, 0).GetPitch();
     }
 
-    protected int BuildStringCount()
+    protected override int BuildStringCount()
     {
         return 6;
     }
 
-    protected bool BuildIsMuteOnChangeFretSameString()
+    protected override bool BuildIsMuteOnChangeFretSameString()
     {
         return true;
     }
 
-    protected bool BuildIsPitchBend()
+    protected override bool BuildIsPitchBend()
     {
         return true;
     }
 
-    protected bool BuildIsAutoLoop()
+    protected override bool BuildIsAutoLoop()
     {
         return false;
     }
 
-    protected bool BuildIsAutoLoopKeepNoteUntilNewNote()
+    protected override bool BuildIsAutoLoopKeepNoteUntilNewNote()
     {
         return false;
     }

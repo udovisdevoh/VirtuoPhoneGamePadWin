@@ -12,7 +12,7 @@ public class Violin : Instrument
     {
     }
 
-    protected void LoadSamples()
+    protected override void LoadSamples()
     {
         AddSample(new Note(Note.E, 0), R.Raw.violine0);
         AddSample(new Note(Note.A, 0), R.Raw.violina0);
@@ -27,47 +27,47 @@ public class Violin : Instrument
         AddSample(new Note(Note.E, 4), R.Raw.violine4);
     }
 
-    protected int BuildMinPitchToPlay()
+    protected override int BuildMinPitchToPlay()
     {
         return new Note(Note.CSharp, 0).GetPitch();
     }
 
-    protected int BuildStringCount()
+    protected override int BuildStringCount()
     {
         return 4;
     }
 
-    protected bool BuildIsMuteOnChangeFretSameString()
+    protected override bool BuildIsMuteOnChangeFretSameString()
     {
         return true;
     }
 
-    protected bool BuildIsAutoLoop()
+    protected override bool BuildIsAutoLoop()
     {
         return true;
     }
 
-    protected void LoadDrone()
+    protected override void LoadDrone()
     {
         //no drone
     }
 
-    protected bool BuildIsPitchBend()
+    protected override bool BuildIsPitchBend()
     {
         return false;
     }
 
-    protected bool BuildIsLazyHarmonicDrone()
+    protected override bool BuildIsLazyHarmonicDrone()
     {
         return false;
     }
 
-    protected bool BuildIsDroneMinimizePitchShift()
+    protected override bool BuildIsDroneMinimizePitchShift()
     {
         return false;
     }
 
-    protected bool BuildIsAutoLoopKeepNoteUntilNewNote()
+    protected override bool BuildIsAutoLoopKeepNoteUntilNewNote()
     {
         return false;
     }

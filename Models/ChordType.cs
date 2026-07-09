@@ -15,8 +15,8 @@ public enum ChordType
     five, six, sixSlashNine, seven,
     sevenSusFour, sevenBFive, sevenBNine, nine,
     nineSusFour, eleven, thirteen, ff_maj, ff_min,
-#warning todo add these type of "chords" -> (in fact they are scales) to the rest of the code
     pentatonic_minor,
     pentatonic_major,
-    pentatonic_minor_blues
+    pentatonic_minor_blues,
+    pentatonic_major_blues
 }
