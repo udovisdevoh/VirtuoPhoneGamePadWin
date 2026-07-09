@@ -18,7 +18,7 @@ public class SoundPool
     public int Load(int resourceId, int priority) => nextId++;
     public int Play(int soundId, float leftVolume, float rightVolume, int priority, int loop, float rate) => nextId++;
     public void Stop(int streamId) { }
-    public void setVolume(int streamId, float left, float right) { }
+    public void SetVolume(int streamId, float left, float right) { }
     public void SetRate(int streamId, float rate) { }
     public void Release() { }
 }

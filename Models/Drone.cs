@@ -10,9 +10,9 @@ namespace VirtuoPhone.Models;
 
 public class Drone
 {
-    private bool _isLazyHarmonic = false;
+    private bool isLazyHarmonic = false;
 
-    private bool _isMinimizePitchShift = false;
+    private bool isMinimizePitchShift = false;
 
     private int noteType;
 
@@ -34,12 +34,6 @@ public class Drone
 
     private float volume;
 
-    /**
-    * @param noteType note type (semitones)
-    * @param resourceId resource id
-    * @param volume volume
-    * @param pitchAdjustSpeedMultiplicator 0: instant
-    */
     public Drone(int noteType, int resourceId, float volume, float pitchAdjustSpeedMultiplicator, float volumeAdjustSpeedMultiplicator)
     {
         this.noteType = noteType;
@@ -56,7 +50,7 @@ public class Drone
 
         int chordFundamentalNoteType = guitarPreset.GetChordFundamentalNoteTypeAt(coordinates);
 
-        if (isMinimizePitchShift())
+        if (IsMinimizePitchShift())
         {
             chordFundamentalNoteType = GetClosestHarmonizedPitchToOriginalSample(chordFundamentalNoteType);
         }
@@ -65,7 +59,7 @@ public class Drone
 
         SetVolume(soundPool, sample.GetVolume());
 
-        if (isLazyHarmonic())
+        if (IsLazyHarmonic())
         {
             int interval = Math.Abs((droneFundamentalNoteType % 12) - (chordFundamentalNoteType % 12));
             isDroneNeedToChangeForChord = (interval != 5 && interval != 7 && interval != 0);
@@ -75,15 +69,19 @@ public class Drone
             isDroneNeedToChangeForChord = droneFundamentalNoteType != chordFundamentalNoteType;
         }
 
-        if (!isPlaying() || isDroneNeedToChangeForChord)
+        if (!IsPlaying() || isDroneNeedToChangeForChord)
         {
 
             SetCurrentChord(chordFundamentalNoteType);
 
-            if (isPlaying())
-            setPitch(soundPool, chordFundamentalNoteType);
+            if (IsPlaying())
+            {
+                SetPitch(soundPool, chordFundamentalNoteType);
+            }
             else
-            play(soundPool, chordFundamentalNoteType);
+            {
+                Play(soundPool, chordFundamentalNoteType);
+            }
         }
     }
 
@@ -91,7 +89,9 @@ public class Drone
     {
         volume = volumeToSet;
         if (streamId > 0)
-        soundPool.setVolume(streamId, volume, volume);
+        {
+            soundPool.SetVolume(streamId, volume, volume);
+        }
     }
 
     public void OnTickUpdate(SoundPool soundPool)
@@ -107,7 +107,9 @@ public class Drone
             volume /= volumeAdjustSpeedMultiplicator;
 
             if (streamId > 0)
-            soundPool.setVolume(streamId, volume, volume);
+            {
+                soundPool.SetVolume(streamId, volume, volume);
+            }
         }
     }
 
@@ -118,10 +120,14 @@ public class Drone
             rate *= pitchAdjustSpeedMultiplicator;
 
             if (rate > targetRate)
-            rate = targetRate;
+            {
+                rate = targetRate;
+            }
 
             if (streamId > 0)
-            soundPool.SetRate(streamId, rate);
+            {
+                soundPool.SetRate(streamId, rate);
+            }
 
         }
         else if (rate > targetRate && pitchAdjustSpeedMultiplicator > 0f)
@@ -129,10 +135,14 @@ public class Drone
             rate /= pitchAdjustSpeedMultiplicator;
 
             if (rate < targetRate)
-            rate = targetRate;
+            {
+                rate = targetRate;
+            }
 
             if (streamId > 0)
-            soundPool.SetRate(streamId, rate);
+            {
+                soundPool.SetRate(streamId, rate);
+            }
         }
     }
 
@@ -178,32 +188,37 @@ public class Drone
         int lowerFourth = chordFundamentalNoteType - 5;
 
 
-        int fundamentalDifference = getPitchAbsoluteDifferenceFromNoteToNote(chordFundamentalNoteType, bestHarmonizedFundamental);
+        int fundamentalDifference = GetPitchAbsoluteDifferenceFromNoteToNote(chordFundamentalNoteType, bestHarmonizedFundamental);
 
 
-        if (getPitchAbsoluteDifferenceFromNoteToNote(chordFundamentalNoteType, upperFifth) < fundamentalDifference)
+        if (GetPitchAbsoluteDifferenceFromNoteToNote(chordFundamentalNoteType, upperFifth) < fundamentalDifference)
         bestHarmonizedFundamental = upperFifth;
 
-        if (getPitchAbsoluteDifferenceFromNoteToNote(chordFundamentalNoteType, lowerFifth) < fundamentalDifference)
+        if (GetPitchAbsoluteDifferenceFromNoteToNote(chordFundamentalNoteType, lowerFifth) < fundamentalDifference)
         bestHarmonizedFundamental = lowerFifth;
 
-        if (getPitchAbsoluteDifferenceFromNoteToNote(chordFundamentalNoteType, upperFourth) < fundamentalDifference)
+        if (GetPitchAbsoluteDifferenceFromNoteToNote(chordFundamentalNoteType, upperFourth) < fundamentalDifference)
         bestHarmonizedFundamental = upperFourth;
 
-        if (getPitchAbsoluteDifferenceFromNoteToNote(chordFundamentalNoteType, lowerFourth) < fundamentalDifference)
+        if (GetPitchAbsoluteDifferenceFromNoteToNote(chordFundamentalNoteType, lowerFourth) < fundamentalDifference)
         bestHarmonizedFundamental = lowerFourth;
 
         return bestHarmonizedFundamental;
     }
 
-    private int getPitchAbsoluteDifferenceFromNoteToNote(int fromNote, int toNote)
+    private int GetPitchAbsoluteDifferenceFromNoteToNote(int fromNote, int toNote)
     {
         int difference = Math.Abs(fromNote - toNote);
 
         while (difference > 6)
-        difference -= 12;
+        {
+            difference -= 12;
+        }
+
         while (difference < -6)
-        difference += 12;
+        {
+            difference += 12;
+        }
 
         return difference;
     }
@@ -217,7 +232,7 @@ public class Drone
         rate = 1f;
     }
 
-    public void setPitch(SoundPool soundPool, int desiredPitch)
+    public void SetPitch(SoundPool soundPool, int desiredPitch)
     {
         targetRate = GetSample().GetPitchMultiplicator(desiredPitch, 0f);
         if (pitchAdjustSpeedMultiplicator <= 0f)
@@ -230,17 +245,21 @@ public class Drone
         }
     }
 
-    public void play(SoundPool soundPool, int desiredPitch)
+    public void Play(SoundPool soundPool, int desiredPitch)
     {
         desiredPitch %= 12;
 
         int originalPitch = noteType;
 
         while (desiredPitch - originalPitch > 6)
-        desiredPitch -= 12;
+        {
+            desiredPitch -= 12;
+        }
 
         while (desiredPitch - originalPitch < -6)
-        desiredPitch += 12;
+        {
+            desiredPitch += 12;
+        }
 
         rate = sample.GetPitchMultiplicator(desiredPitch, 0f);
         targetRate = rate;
@@ -248,28 +267,28 @@ public class Drone
         volume = sample.GetVolume();
     }
 
-    public bool isLazyHarmonic()
+    public bool IsLazyHarmonic()
     {
-        return _isLazyHarmonic;
+        return isLazyHarmonic;
     }
 
-    public bool isMinimizePitchShift()
+    public bool IsMinimizePitchShift()
     {
-        return _isMinimizePitchShift;
+        return isMinimizePitchShift;
     }
 
-    public bool isPlaying()
+    public bool IsPlaying()
     {
         return streamId > 0;
     }
 
     public void IsLazyHarmonic(bool isLazyHarmonic)
     {
-        this._isLazyHarmonic = isLazyHarmonic;
+        this.isLazyHarmonic = isLazyHarmonic;
     }
 
     public void IsMinimizePitchShift(bool isMinimizePitchShift)
     {
-        this._isMinimizePitchShift = isMinimizePitchShift;
+        this.isMinimizePitchShift = isMinimizePitchShift;
     }
 }
