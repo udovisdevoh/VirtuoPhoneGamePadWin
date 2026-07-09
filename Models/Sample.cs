@@ -30,12 +30,12 @@ public class Sample
         this.volume = volume;
     }
 
-    public int getOriginalPitch()
+    public int GetOriginalPitch()
     {
         return originalPitch;
     }
 
-    public float getPitchMultiplicator(int desiredPitch, float pitchBend)
+    public float GetPitchMultiplicator(int desiredPitch, float pitchBend)
     {
         if (desiredPitch == originalPitch && pitchBend == 0f)
         return 1.0f;
@@ -43,7 +43,7 @@ public class Sample
         return (float)Math.Pow(1.0594632, (double)(desiredPitch - originalPitch) + pitchBend);
     }
 
-    public int getResourceId()
+    public int GetResourceId()
     {
         return resourceId;
     }
@@ -53,13 +53,20 @@ public class Sample
         this.soundId = soundId;
     }
 
-    public int getSoundId()
+    public int GetSoundId()
     {
         return soundId;
     }
 
-    public float getVolume()
+    public float GetVolume()
     {
         return volume;
     }
+
+    // Java-style wrappers for converted code
+    public int getOriginalPitch() => GetOriginalPitch();
+    public float getPitchMultiplicator(int desiredPitch, float pitchBend) => GetPitchMultiplicator(desiredPitch, pitchBend);
+    public int getResourceId() => GetResourceId();
+    public int getSoundId() => GetSoundId();
+    public float getVolume() => GetVolume();
 }

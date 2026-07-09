@@ -41,7 +41,8 @@ public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
 
         name = lineList[0].Trim();
 
-        foreach (int i = 1; i < lineList.Length; i++) {
+        for (int i = 1; i < lineList.Length; i++)
+    {
             string chordAsString = lineList[i].Trim();
             if (chordAsString.Length > 1)
             {
@@ -62,24 +63,24 @@ public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
     /**
     * @param name custom name for preset
     */
-    public void setName(string name)
+    public void SetName(string name)
     {
         this.name = name;
     }
 
-    public void setChord(int index, Chord chord)
+    public void SetChord(int index, Chord chord)
     {
         while (index >= chordList.Count)
         chordList.Add(new Chord(Note.E, ChordType.m));
         chordList[index] = chord;
     }
 
-    public IEnumerator<Chord> iterator()
+    public IEnumerator<Chord> GetEnumerator()
     {
         return chordList.GetEnumerator();
     }
 
-    public int size()
+    public int Size()
     {
         return chordList.Count;
     }
@@ -91,6 +92,10 @@ public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
         return note;
     }
 
+    // Java-style wrappers
+    public Note getNoteAtJava(Point coordinates) => getNoteAt(coordinates);
+    public int getChordFundamentalNoteTypeAt(Point coordinates) => GetChordFundamentalNoteTypeAt(coordinates);
+
     public int GetChordFundamentalNoteTypeAt(Point coordinates)
     {
         Chord chord = chordList[coordinates.y];
@@ -98,14 +103,14 @@ public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
         return note.getPitch() % 12;
     }
 
-    public string serialize()
+    public string Serialize()
     {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.Append(name.Trim());
         stringBuilder.Append('\r');
 
-        for (Chord chord in chordList)
+        foreach (Chord chord in chordList)
         {
             if (chord != null)
             {
@@ -117,15 +122,18 @@ public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
         return stringBuilder.ToString();
     }
 
+    // Java-style wrapper
+    public string serialize() => Serialize();
+
     public void replaceChord(Chord oldChord, Chord newChord)
     {
-        int index = chordList.indexOf(oldChord);
+        int index = chordList.IndexOf(oldChord);
         chordList[index] = newChord;
     }
 
     public void removeChord(Chord chord)
     {
-        chordList.Remove(chordList.indexOf(chord));
+        chordList.Remove(chord);
     }
 
     public void add(Chord chord)

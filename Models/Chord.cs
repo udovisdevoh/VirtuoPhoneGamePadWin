@@ -499,9 +499,9 @@ public class Chord : IEnumerable<Note>, IStringSerializable
 
         name = segmentList[0].Trim();
 
-        chordTypeId = Integer.parseInt(segmentList[1].Trim());
+        chordTypeId = int.Parse(segmentList[1].Trim());
 
-        noteType = Integer.parseInt(segmentList[2].Trim());
+        noteType = int.Parse(segmentList[2].Trim());
 
         Chord prototypeChord = new Chord(noteType, Chord.getChordTypeFromId(chordTypeId));
 
@@ -555,7 +555,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
         }
     }
 
-    public string toString()
+    public override string ToString()
     {
         return name;
     }
@@ -565,17 +565,21 @@ public class Chord : IEnumerable<Note>, IStringSerializable
         return noteList[index];
     }
 
-    public int size()
+    // C# indexer and Count property to match usage from converted code
+    public Note this[int index] => noteList[index];
+    public int Count => noteList.Count;
+
+    public int Size()
     {
         return noteList.Count;
     }
 
-    public IEnumerator<Note> iterator()
+    public IEnumerator<Note> GetEnumerator()
     {
         return noteList.GetEnumerator();
     }
 
-    public bool containsExact(Note note)
+    public bool ContainsExact(Note note)
     {
         foreach (Note other in noteList)
         {
@@ -585,12 +589,21 @@ public class Chord : IEnumerable<Note>, IStringSerializable
         return false;
     }
 
-    public void addNote(Note note)
+    // Java-style wrappers
+    public bool containsExact(Note note) => ContainsExact(note);
+    public void addNote(Note note) => AddNote(note);
+    public int lastPitch() => LastPitch();
+    public string serialize() => Serialize();
+    public int getChordTypeId() => GetChordTypeId();
+    public int getNoteType() => GetNoteType();
+    public int getAveragePitch() => GetAveragePitch();
+
+    public void AddNote(Note note)
     {
         noteList.Add(note);
     }
 
-    public int lastPitch()
+    public int LastPitch()
     {
         int index = noteList.Count - 1;
         while (index >= 0)
@@ -602,7 +615,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
         return 0;
     }
 
-    public string serialize()
+    public string Serialize()
     {
         StringBuilder stringBuilder = new StringBuilder();
 
@@ -779,9 +792,9 @@ public class Chord : IEnumerable<Note>, IStringSerializable
         pitchSum += note.getPitch();
 
         if (noteList.Count == 0)
-        return 0;
+            return 0;
 
-        return (int)Math.round((double)pitchSum / (double)noteList.Count);
+        return (int)Math.Round((double)pitchSum / (double)noteList.Count);
     }
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

@@ -45,22 +45,22 @@ public abstract class Instrument : IEnumerable<Sample>
 
     private int polyphony;
 
-    private bool isMuteOnChangeFretSameString;
+    private bool _isMuteOnChangeFretSameString;
 
-    private bool isAutoLoopKeepNoteUntilNewNote;
+    private bool _isAutoLoopKeepNoteUntilNewNote;
 
-    private bool isPitchBend;
+    private bool _isPitchBend;
 
-    private bool isAutoLoop;
+    private bool _isAutoLoop;
 
     public Instrument(Context context)
     {
         random = new Random();
         stringCount = buildStringCount();
-        isMuteOnChangeFretSameString = buildIsMuteOnChangeFretSameString();
-        isAutoLoop = buildIsAutoLoop();
-        isAutoLoopKeepNoteUntilNewNote = buildIsAutoLoopKeepNoteUntilNewNote();
-        isPitchBend = buildIsPitchBend();
+        _isMuteOnChangeFretSameString = buildIsMuteOnChangeFretSameString();
+        _isAutoLoop = buildIsAutoLoop();
+        _isAutoLoopKeepNoteUntilNewNote = buildIsAutoLoopKeepNoteUntilNewNote();
+        _isPitchBend = buildIsPitchBend();
         polyphony = stringCount * 2;
         soundPool = new SoundPool(polyphony, AudioManager.STREAM_MUSIC, 0);
         //streamIdByStringBeingPlayed = new int[AppController.STRING_COUNT];
@@ -69,11 +69,11 @@ public abstract class Instrument : IEnumerable<Sample>
         playingStringMemory = new PlayingStringMemory(stringCount);
         loadSamples();
 
-        for (int i = 0; i < multiSampleList.length; i++)
+        for (int i = 0; i < multiSampleList.Length; i++)
         {
             if (multiSampleList[i] != null)
             {
-                for (Sample sample : multiSampleList[i])
+                foreach (Sample sample in multiSampleList[i])
                 {
                     int soundId = soundPool.load(context, sample.getResourceId(), 1);
                     sample.setSoundId(soundId);
@@ -92,26 +92,26 @@ public abstract class Instrument : IEnumerable<Sample>
         }
     }
 
-    protected abstract bool buildIsAutoLoopKeepNoteUntilNewNote();
+    protected virtual bool buildIsAutoLoopKeepNoteUntilNewNote() => false;
 
-    protected abstract bool buildIsDroneMinimizePitchShift();
+    protected virtual bool buildIsDroneMinimizePitchShift() => false;
 
-    protected abstract bool buildIsLazyHarmonicDrone();
+    protected virtual bool buildIsLazyHarmonicDrone() => false;
 
-    protected abstract bool buildIsPitchBend();
+    protected virtual bool buildIsPitchBend() => false;
 
-    protected abstract void loadDrone(Context context);
+    protected virtual void loadDrone(Context context) { }
 
-    protected abstract bool buildIsAutoLoop();
+    protected virtual bool buildIsAutoLoop() => false;
 
-    protected abstract bool buildIsMuteOnChangeFretSameString();
+    protected virtual bool buildIsMuteOnChangeFretSameString() => false;
 
-    protected abstract int buildStringCount();
+    protected virtual int buildStringCount() => 6;
 
     /**
     * @return below that pitch, remain silent
     */
-    protected abstract int buildMinPitchToPlay();
+    protected virtual int buildMinPitchToPlay() => 0;
 
     protected void addSample(Note note, int resourceId)
     {
@@ -135,7 +135,7 @@ public abstract class Instrument : IEnumerable<Sample>
         multiSampleList[pitch] = new MultiSampleSet();
 
         multiSampleList[pitch].addSample(sample);
-        sampleSet.add(sample);
+        sampleSet.Add(sample);
     }
 
     protected void setDrone(Drone drone, Context context)
@@ -145,7 +145,7 @@ public abstract class Instrument : IEnumerable<Sample>
         drone.getSample().setSoundId(soundId);
     }
 
-    protected abstract void loadSamples();
+    protected virtual void loadSamples() { }
 
     private void interpolateBlankSamples()
     {
@@ -181,7 +181,7 @@ public abstract class Instrument : IEnumerable<Sample>
         soundPool.release();
     }
 
-    public IEnumerator<Sample> iterator()
+    public IEnumerator<Sample> GetEnumerator()
     {
         return sampleSet.GetEnumerator();
     }
@@ -236,7 +236,7 @@ public abstract class Instrument : IEnumerable<Sample>
 
     public bool isAutoLoop()
     {
-        return isAutoLoop;
+        return _isAutoLoop;
     }
 
     public void stop(int streamId)
@@ -257,7 +257,7 @@ public abstract class Instrument : IEnumerable<Sample>
 
     public bool isPitchBend()
     {
-        return isPitchBend;
+        return _isPitchBend;
     }
 
     public void setStreamPitch(int streamId, Note note, float pitchBend)
@@ -289,12 +289,12 @@ public abstract class Instrument : IEnumerable<Sample>
 
     public bool isAutoLoopKeepNoteUntilNewNote()
     {
-        return isAutoLoopKeepNoteUntilNewNote;
+        return _isAutoLoopKeepNoteUntilNewNote;
     }
 
     public void stopAllNotes(PointerMemory pointerMemory)
     {
-        for (int streamIdToMute : pointerMemory.getStreamList())
+        foreach (int streamIdToMute in pointerMemory.getStreamList())
         {
             stop(streamIdToMute);
         }

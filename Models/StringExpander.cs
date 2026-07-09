@@ -14,7 +14,7 @@ namespace VirtuoPhone.Models;
 */
 public class StringExpander
 {
-    private static TreeMap<Integer, Integer> listNoteTypeCount = new TreeMap<Integer, Integer>();
+    private static Dictionary<int, int> listNoteTypeCount = new Dictionary<int, int>();
 
     public static void addMoreNotes(Chord chord, int desiredStringCount)
     {
@@ -53,7 +53,7 @@ public class StringExpander
         {
             int mostFrequentNoteType = getMostFrequentNote(chord);
             Note mostExtremeNote = getMostExtremeNote(chord, mostFrequentNoteType, averagePitch);
-            chord.remove(mostExtremeNote);
+            chord.Remove(mostExtremeNote);
             stringCountToRemove--;
         }
     }
@@ -64,7 +64,7 @@ public class StringExpander
         int largestDifference = -1;
         int currentDifference;
 
-        for (Note note : chord)
+        foreach (Note note  in chord)
         {
             if (note.getPitch() % 12 == noteType)
             {
@@ -84,26 +84,26 @@ public class StringExpander
     {
         int rarestNote = 0;
 
-        synchronized(listNoteTypeCount) {
-            listNoteTypeCount.clear();
-            for (Note note : chord)
+        lock(listNoteTypeCount) {
+            listNoteTypeCount.Clear();
+            foreach (Note note  in chord)
             {
                 if (note != null)
                 {
                     int notePitch = note.getPitch() % 12;
-                    if (listNoteTypeCount.containsKey(notePitch))
+                    if (listNoteTypeCount.ContainsKey(notePitch))
                     {
-                        listNoteTypeCount.put(notePitch, listNoteTypeCount[notePitch] + 1);
+                        listNoteTypeCount[notePitch] = listNoteTypeCount[notePitch] + 1;
                     }
                     else
                     {
-                        listNoteTypeCount.put(notePitch, 1);
+                        listNoteTypeCount[notePitch] = 1;
                     }
                 }
             }
 
             int rarestCount = -1;
-            for (int pitch : listNoteTypeCount.keySet())
+            foreach (int pitch  in listNoteTypeCount.Keys)
             {
                 int count = listNoteTypeCount[pitch];
 
@@ -122,26 +122,26 @@ public class StringExpander
     {
         int mostFrequentNote = 0;
 
-        synchronized(listNoteTypeCount) {
-            listNoteTypeCount.clear();
-            for (Note note : chord)
+        lock(listNoteTypeCount) {
+            listNoteTypeCount.Clear();
+            foreach (Note note  in chord)
             {
                 if (note != null)
                 {
                     int notePitch = note.getPitch() % 12;
-                    if (listNoteTypeCount.containsKey(notePitch))
+                    if (listNoteTypeCount.ContainsKey(notePitch))
                     {
-                        listNoteTypeCount.put(notePitch, listNoteTypeCount[notePitch] + 1);
+                        listNoteTypeCount[notePitch] = listNoteTypeCount[notePitch] + 1;
                     }
                     else
                     {
-                        listNoteTypeCount.put(notePitch, 1);
+                        listNoteTypeCount[notePitch] = 1;
                     }
                 }
             }
 
             int mostFrequentCount = -1;
-            for (int pitch : listNoteTypeCount.keySet())
+            foreach (int pitch  in listNoteTypeCount.Keys)
             {
                 int count = listNoteTypeCount[pitch];
 
@@ -158,7 +158,7 @@ public class StringExpander
 
     private static void reduceOctaveAllNotes(Chord chord)
     {
-        for (Note note : chord)
+        foreach (Note note  in chord)
         {
             note.setPitch(note.getPitch() - 12);
         }

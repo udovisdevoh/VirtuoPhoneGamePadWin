@@ -14,39 +14,39 @@ public class Note
 {
     private int pitch;
 
-    public static final int C = 0;
+    public const int C = 0;
 
-    public static final int CSharp = 1;
+    public const int CSharp = 1;
 
-    public static final int DFlat = 1;
+    public const int DFlat = 1;
 
-    public static final int D = 2;
+    public const int D = 2;
 
-    public static final int DSharp = 3;
+    public const int DSharp = 3;
 
-    public static final int EFlat = 3;
+    public const int EFlat = 3;
 
-    public static final int E = 4;
+    public const int E = 4;
 
-    public static final int F = 5;
+    public const int F = 5;
 
-    public static final int FSharp = 6;
+    public const int FSharp = 6;
 
-    public static final int GFlat = 6;
+    public const int GFlat = 6;
 
-    public static final int G = 7;
+    public const int G = 7;
 
-    public static final int GSharp = 8;
+    public const int GSharp = 8;
 
-    public static final int AFlat = 8;
+    public const int AFlat = 8;
 
-    public static final int A = 9;
+    public const int A = 9;
 
-    public static final int ASharp = 10;
+    public const int ASharp = 10;
 
-    public static final int BFlat = 10;
+    public const int BFlat = 10;
 
-    public static final int B = 11;
+    public const int B = 11;
 
     /**
     * @param noteType Use constant defined in Note class
@@ -58,7 +58,7 @@ public class Note
         pitch = noteType + octave * 12;
     }
 
-    public string getName()
+    public string GetName()
     {
         int noteType = pitch % 12;
         switch (noteType)
@@ -103,13 +103,18 @@ public class Note
     /**
     * @return Pitch (in semitones)
     */
-    public int getPitch()
+    public int GetPitch()
     {
         return pitch;
     }
 
-    public void setPitch(int pitch)
+    public void SetPitch(int pitch)
     {
         this.pitch = pitch;
     }
+
+    // Java-style wrappers kept for converted code
+    public int getPitch() => GetPitch();
+    public void setPitch(int p) => SetPitch(p);
+    public string getName() => GetName();
 }

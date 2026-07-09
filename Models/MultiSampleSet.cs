@@ -25,17 +25,17 @@ public class MultiSampleSet : IEnumerable<Sample>
         return sampleList[0];
         else
         {
-            int index = random.nextInt(sampleList.Count);
+            int index = random.Next(sampleList.Count);
             return sampleList[index];
         }
     }
 
     public void addSample(Sample sample)
     {
-        sampleList.add(sample);
+        sampleList.Add(sample);
     }
 
-    public IEnumerator<Sample> iterator()
+    public IEnumerator<Sample> GetEnumerator()
     {
         return sampleList.GetEnumerator();
     }

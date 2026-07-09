@@ -15,9 +15,9 @@ namespace VirtuoPhone.Models;
 */
 public class Drone
 {
-    private bool isLazyHarmonic = false;
+    private bool _isLazyHarmonic = false;
 
-    private bool isMinimizePitchShift = false;
+    private bool _isMinimizePitchShift = false;
 
     private int noteType;
 
@@ -255,12 +255,12 @@ public class Drone
 
     public bool isLazyHarmonic()
     {
-        return isLazyHarmonic;
+        return _isLazyHarmonic;
     }
 
     public bool isMinimizePitchShift()
     {
-        return isMinimizePitchShift;
+        return _isMinimizePitchShift;
     }
 
     public bool isPlaying()
@@ -270,11 +270,11 @@ public class Drone
 
     public void isLazyHarmonic(bool isLazyHarmonic)
     {
-        this.isLazyHarmonic = isLazyHarmonic;
+        this._isLazyHarmonic = isLazyHarmonic;
     }
 
     public void isMinimizePitchShift(bool isMinimizePitchShift)
     {
-        this.isMinimizePitchShift = isMinimizePitchShift;
+        this._isMinimizePitchShift = isMinimizePitchShift;
     }
 }

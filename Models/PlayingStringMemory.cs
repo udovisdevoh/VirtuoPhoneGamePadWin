@@ -19,14 +19,18 @@ public class PlayingStringMemory
         stringStreamList = new int[stringCount];
     }
 
-    public void remember(int stringId, int streamId)
+    public void Remember(int stringId, int streamId)
     {
         stringStreamList[stringId] = streamId;
     }
 
-    public int getStreamIdFromString(int stringId)
+    public int GetStreamIdFromString(int stringId)
     {
         return stringStreamList[stringId];
     }
+
+    // Java-style wrappers
+    public void remember(int stringId, int streamId) => Remember(stringId, streamId);
+    public int getStreamIdFromString(int stringId) => GetStreamIdFromString(stringId);
 
 }
