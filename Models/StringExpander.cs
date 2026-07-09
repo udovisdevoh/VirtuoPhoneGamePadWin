@@ -46,15 +46,18 @@ public class StringExpander
         while (stringCountToRemove > 0)
         {
             int mostFrequentNoteType = GetMostFrequentNote(chord);
-            Note mostExtremeNote = GetMostExtremeNote(chord, mostFrequentNoteType, averagePitch);
-            chord.Remove(mostExtremeNote);
+            Note? mostExtremeNote = GetMostExtremeNote(chord, mostFrequentNoteType, averagePitch);
+            if (mostExtremeNote != null)
+            {
+                chord.Remove(mostExtremeNote);
+            }
             stringCountToRemove--;
         }
     }
 
-    private static Note GetMostExtremeNote(Chord chord, int noteType, int averagePitch)
+    private static Note? GetMostExtremeNote(Chord chord, int noteType, int averagePitch)
     {
-        Note mostExtremeNote = null;
+        Note? mostExtremeNote = null;
         int largestDifference = -1;
         int currentDifference;
 

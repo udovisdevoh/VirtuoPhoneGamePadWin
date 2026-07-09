@@ -12,7 +12,7 @@ public abstract class Instrument : IEnumerable<Sample>
 
     private MultiSampleSet[] multiSampleList;
 
-    private Drone drone;
+    private Drone? drone;
 
     private SoundPool soundPool;
 
@@ -144,16 +144,17 @@ public abstract class Instrument : IEnumerable<Sample>
                 }
                 else if (i == 0)
                 {
-                    multiSampleList[i] = GetLowestMultiSampleSet();
+                    MultiSampleSet? lowestMultiSampleSet = GetLowestMultiSampleSet();
+                    if (lowestMultiSampleSet != null)
+                    {
+                        multiSampleList[i] = lowestMultiSampleSet;
+                    }
                 }
             }
         }
     }
 
-    /**
-    * @return sample with the lowest pitch
-    */
-    private MultiSampleSet GetLowestMultiSampleSet()
+    private MultiSampleSet? GetLowestMultiSampleSet()
     {
         for (int i = 0; i < 128; i++)
         {
@@ -245,7 +246,7 @@ public abstract class Instrument : IEnumerable<Sample>
         soundPool.Stop(streamId);
     }
 
-    public Drone GetDrone()
+    public Drone? GetDrone()
     {
         return drone;
     }
