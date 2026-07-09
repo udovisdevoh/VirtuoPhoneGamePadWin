@@ -5,18 +5,6 @@ using System.Text;
 using System.Drawing;
 
 namespace VirtuoPhone.Models.Instruments;
-
-
-
-
-
-
-
-
-/**
-* @author Guillaume Lacasse
-* steel guitar
-*/
 public class SteelGuitar : Instrument
 {
     public SteelGuitar(Context context)

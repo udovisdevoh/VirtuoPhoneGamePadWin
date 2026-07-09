@@ -6,10 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
-/**
-* @author Guillaume Lacasse
-* Type of chord
-*/
 public enum ChordType
 {
     maj, maj7, maj9, maj13,

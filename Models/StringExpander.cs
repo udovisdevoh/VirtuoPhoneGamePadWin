@@ -6,12 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
-
-
-/**
-* To add more notes to the chord if the guitar has more than 6 strings
-* @author Guillaume Lacasse
-*/
 public class StringExpander
 {
     private static Dictionary<int, int> listNoteTypeCount = new Dictionary<int, int>();

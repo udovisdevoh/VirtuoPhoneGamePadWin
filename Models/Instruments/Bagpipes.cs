@@ -6,18 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models.Instruments;
 
-
-
-
-
-
-
-
-
-/**
-* @author Guillaume Lacasse
-* bagpipes
-*/
 public class Bagpipes : Instrument
 {
     public Bagpipes(Context context)

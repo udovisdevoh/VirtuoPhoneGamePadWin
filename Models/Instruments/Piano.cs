@@ -6,17 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models.Instruments;
 
-
-
-
-
-
-
-
-/**
-* @author Guillaume Lacasse
-* piano
-*/
 public class Piano : Instrument
 {
     public Piano(Context context)

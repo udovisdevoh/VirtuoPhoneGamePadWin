@@ -6,17 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models.Instruments;
 
-
-
-
-
-
-
-
-/**
-* @author Guillaume Lacasse
-* steel guitar
-*/
 public class Harpsichord : Instrument
 {
     public Harpsichord(Context context)

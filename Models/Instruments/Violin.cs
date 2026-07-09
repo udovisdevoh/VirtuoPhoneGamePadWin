@@ -6,17 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models.Instruments;
 
-
-
-
-
-
-
-
-/**
-* @author Guillaume Lacasse
-* violin
-*/
 public class Violin : Instrument
 {
     public Violin(Context context)

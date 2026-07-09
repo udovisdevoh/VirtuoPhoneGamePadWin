@@ -6,16 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
-
-
-
-
-
-
-/**
-* Represents a guitar chord
-* @author Guillaume Lacasse
-*/
 public class Chord : IEnumerable<Note>, IStringSerializable
 {
     private List<Note> noteList = new List<Note>();

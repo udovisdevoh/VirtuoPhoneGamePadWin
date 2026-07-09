@@ -6,18 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models.Instruments;
 
-
-
-
-
-
-
-
-
-/**
-* @author Guillaume Lacasse
-* synth
-*/
 public class Synth : Instrument
 {
     public Synth(Context context)

@@ -6,13 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
-
-
-
-/**
-* @author Guillaume Lacasse
-* (for sitar or bagpipe etc)
-*/
 public class Drone
 {
     private bool _isLazyHarmonic = false;

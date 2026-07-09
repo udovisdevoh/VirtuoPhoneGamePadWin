@@ -6,16 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
-
-
-
-
-
-
-/**
-* @author Guillaume Lacasse
-* Chord preset
-*/
 public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
 {
     private string name = null;

@@ -6,10 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
-/**
-* Represents a music note
-* @author Guillaume Lacasse
-*/
 public class Note
 {
     private int pitch;

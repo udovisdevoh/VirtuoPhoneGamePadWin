@@ -5,19 +5,6 @@ using System.Text;
 using System.Drawing;
 
 namespace VirtuoPhone.Models.Instruments;
-
-
-
-
-
-
-
-
-
-/**
-* @author Guillaume Lacasse
-* sitar
-*/
 public class Sitar : Instrument
 {
     public Sitar(Context context)

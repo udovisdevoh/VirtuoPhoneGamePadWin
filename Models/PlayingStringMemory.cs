@@ -5,11 +5,6 @@ using System.Text;
 using System.Drawing;
 
 namespace VirtuoPhone.Models;
-
-/**
-* Remember which string is being played
-* @author Guillaume Lacasse
-*/
 public class PlayingStringMemory
 {
     private int[] stringStreamList;

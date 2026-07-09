@@ -5,16 +5,6 @@ using System.Text;
 using System.Drawing;
 
 namespace VirtuoPhone.Models.Instruments;
-
-
-
-
-
-
-/**
-* @author Guillaume Lacasse
-* Harp
-*/
 public class Harp : Instrument
 {
     public Harp(Context context)
