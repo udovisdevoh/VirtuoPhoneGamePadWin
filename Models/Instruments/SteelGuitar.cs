@@ -11,57 +11,57 @@ public class SteelGuitar : Instrument
     {
     }
 
-    protected void loadSamples()
+    protected void LoadSamples()
     {
-        addSample(new Note(Note.E, 2), R.raw.guitare2);
-        addSample(new Note(Note.A, 2), R.raw.guitara2);
-        addSample(new Note(Note.D, 3), R.raw.guitard3);
-        addSample(new Note(Note.G, 3), R.raw.guitarg3);
-        addSample(new Note(Note.B, 3), R.raw.guitarb3);
-        addSample(new Note(Note.E, 4), R.raw.guitare4);
+        addSample(new Note(Note.E, 2), R.Raw.guitare2);
+        addSample(new Note(Note.A, 2), R.Raw.guitara2);
+        addSample(new Note(Note.D, 3), R.Raw.guitard3);
+        addSample(new Note(Note.G, 3), R.Raw.guitarg3);
+        addSample(new Note(Note.B, 3), R.Raw.guitarb3);
+        addSample(new Note(Note.E, 4), R.Raw.guitare4);
     }
 
-    protected int buildMinPitchToPlay()
+    protected int BuildMinPitchToPlay()
     {
         return new Note(Note.CSharp, 2).getPitch();
     }
 
-    protected int buildStringCount()
+    protected int BuildStringCount()
     {
         return 6;
     }
 
-    protected bool buildIsMuteOnChangeFretSameString()
+    protected bool BuildIsMuteOnChangeFretSameString()
     {
         return true;
     }
 
-    protected bool buildIsAutoLoop()
+    protected bool BuildIsAutoLoop()
     {
         return false;
     }
 
-    protected void loadDrone(Context context)
+    protected void LoadDrone(Context context)
     {
         //no drone
     }
 
-    protected bool buildIsPitchBend()
+    protected bool BuildIsPitchBend()
     {
         return false;
     }
 
-    protected bool buildIsLazyHarmonicDrone()
+    protected bool BuildIsLazyHarmonicDrone()
     {
         return false;
     }
 
-    protected bool buildIsDroneMinimizePitchShift()
+    protected bool BuildIsDroneMinimizePitchShift()
     {
         return false;
     }
 
-    protected bool buildIsAutoLoopKeepNoteUntilNewNote()
+    protected bool BuildIsAutoLoopKeepNoteUntilNewNote()
     {
         return false;
     }

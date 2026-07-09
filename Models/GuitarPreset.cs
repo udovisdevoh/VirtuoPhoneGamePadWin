@@ -8,7 +8,7 @@ namespace VirtuoPhone.Models;
 
 public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
 {
-    private string name = null;
+    private string name = string.Empty;
 
     private List<Chord> chordList = new List<Chord>();
 

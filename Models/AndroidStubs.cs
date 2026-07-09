@@ -71,7 +71,7 @@ namespace VirtuoPhone.Models.Instruments
 
 public static class R
 {
-    public static class raw
+    public static class Raw
     {
         // Resource stubs referenced across instruments (values arbitrary)
         public const int bagpipese0 = 1;

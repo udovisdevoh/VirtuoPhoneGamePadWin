@@ -12,7 +12,7 @@ public abstract class Instrument : IEnumerable<Sample>
 
     private MultiSampleSet[] multiSampleList;
 
-    private Drone drone = null;
+    private Drone drone;
 
     private SoundPool soundPool;
 

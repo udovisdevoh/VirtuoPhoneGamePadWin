@@ -789,7 +789,7 @@ public class Chord : IEnumerable<Note>, IStringSerializable
         }
     }
 
-    public void remove(Note note)
+    public void Remove(Note note)
     {
         noteList.Remove(note);
     }

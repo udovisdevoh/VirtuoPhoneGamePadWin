@@ -17,84 +17,84 @@ public class JewsHarp : Instrument
     {
     }
 
-    protected void loadSamples()
+    protected void LoadSamples()
     {
         Note note;
 
         note = new Note(Note.DSharp, 2);
-        addSample(note, R.raw.guimb5);
-        addSample(note, R.raw.guimb9);
-        addSample(note, R.raw.guimb15);
-        addSample(note, R.raw.guimb17);
+        addSample(note, R.Raw.guimb5);
+        addSample(note, R.Raw.guimb9);
+        addSample(note, R.Raw.guimb15);
+        addSample(note, R.Raw.guimb17);
 
         note = new Note(Note.DSharp, 3);
-        addSample(note, R.raw.guimb36);
-        addSample(note, R.raw.guimb2);
-        addSample(note, R.raw.guimb3);
-        addSample(note, R.raw.guimb8);
-        addSample(note, R.raw.guimb10);
-        addSample(note, R.raw.guimb12);
-        addSample(note, R.raw.guimb23);
-        addSample(note, R.raw.guimb30);
-        addSample(note, R.raw.guimb31);
-        addSample(note, R.raw.guimb34);
-        addSample(note, R.raw.guimb35);
+        addSample(note, R.Raw.guimb36);
+        addSample(note, R.Raw.guimb2);
+        addSample(note, R.Raw.guimb3);
+        addSample(note, R.Raw.guimb8);
+        addSample(note, R.Raw.guimb10);
+        addSample(note, R.Raw.guimb12);
+        addSample(note, R.Raw.guimb23);
+        addSample(note, R.Raw.guimb30);
+        addSample(note, R.Raw.guimb31);
+        addSample(note, R.Raw.guimb34);
+        addSample(note, R.Raw.guimb35);
 
         note = new Note(Note.DSharp, 4);
-        addSample(note, R.raw.guimb7);
-        addSample(note, R.raw.guimb6);
-        addSample(note, R.raw.guimb25);
-        addSample(note, R.raw.guimb32);
+        addSample(note, R.Raw.guimb7);
+        addSample(note, R.Raw.guimb6);
+        addSample(note, R.Raw.guimb25);
+        addSample(note, R.Raw.guimb32);
 
         note = new Note(Note.DSharp, 5);
-        addSample(note, R.raw.guimb14);
-        addSample(note, R.raw.guimb1);
-        addSample(note, R.raw.guimb11);
-        addSample(note, R.raw.guimb20);
-        addSample(note, R.raw.guimb26);
+        addSample(note, R.Raw.guimb14);
+        addSample(note, R.Raw.guimb1);
+        addSample(note, R.Raw.guimb11);
+        addSample(note, R.Raw.guimb20);
+        addSample(note, R.Raw.guimb26);
     }
 
-    protected void loadDrone(Context context)
+    protected void LoadDrone(Context context)
     {
         //setDrone(new Drone(Note.E, R.raw.violine2, 0.3f), context);
     }
 
-    protected int buildMinPitchToPlay()
+    protected int BuildMinPitchToPlay()
     {
         return new Note(Note.CSharp, 0).getPitch();
     }
 
-    protected int buildStringCount()
+    protected int BuildStringCount()
     {
         return 6;
     }
 
-    protected bool buildIsMuteOnChangeFretSameString()
+    protected bool BuildIsMuteOnChangeFretSameString()
     {
         return false;
     }
 
-    protected bool buildIsAutoLoop()
+    protected bool BuildIsAutoLoop()
     {
         return false;
     }
 
-    protected bool buildIsPitchBend()
+    protected bool BuildIsPitchBend()
     {
         return false;
     }
 
-    protected bool buildIsLazyHarmonicDrone()
+    protected bool BuildIsLazyHarmonicDrone()
     {
         return false;
     }
 
-    protected bool buildIsDroneMinimizePitchShift()
+    protected bool BuildIsDroneMinimizePitchShift()
     {
         return false;
     }
 
-    protected bool buildIsAutoLoopKeepNoteUntilNewNote()
+    protected bool BuildIsAutoLoopKeepNoteUntilNewNote()
     {
         return false;
     }

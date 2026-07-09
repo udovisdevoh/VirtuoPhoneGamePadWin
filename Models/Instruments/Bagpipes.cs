@@ -12,58 +12,58 @@ public class Bagpipes : Instrument
     {
     }
 
-    protected void loadSamples()
+    protected void LoadSamples()
     {
-        addSample(new Note(Note.E, 2), R.raw.bagpipese0);
-        addSample(new Note(Note.A, 2), R.raw.bagpipesa0);
-        addSample(new Note(Note.D, 3), R.raw.bagpipesd1);
-        addSample(new Note(Note.G, 3), R.raw.bagpipesg1);
-        addSample(new Note(Note.B, 3), R.raw.bagpipesb1);
-        addSample(new Note(Note.E, 4), R.raw.bagpipese2);
-        addSample(new Note(Note.A, 4), R.raw.bagpipesa2);
+        addSample(new Note(Note.E, 2), R.Raw.bagpipese0);
+        addSample(new Note(Note.A, 2), R.Raw.bagpipesa0);
+        addSample(new Note(Note.D, 3), R.Raw.bagpipesd1);
+        addSample(new Note(Note.G, 3), R.Raw.bagpipesg1);
+        addSample(new Note(Note.B, 3), R.Raw.bagpipesb1);
+        addSample(new Note(Note.E, 4), R.Raw.bagpipese2);
+        addSample(new Note(Note.A, 4), R.Raw.bagpipesa2);
     }
 
-    protected void loadDrone(Context context)
+    protected void LoadDrone(Context context)
     {
-        setDrone(new Drone(Note.A, R.raw.bagpipesdroneloopa, 1f, 1.2f, 0f), context);
+        setDrone(new Drone(Note.A, R.Raw.bagpipesdroneloopa, 1f, 1.2f, 0f), context);
     }
 
-    protected int buildMinPitchToPlay()
+    protected int BuildMinPitchToPlay()
     {
         return new Note(Note.CSharp, 0).getPitch();
     }
 
-    protected int buildStringCount()
+    protected int BuildStringCount()
     {
         return 6;
     }
 
-    protected bool buildIsLazyHarmonicDrone()
+    protected bool BuildIsLazyHarmonicDrone()
     {
         return false;
     }
 
-    protected bool buildIsDroneMinimizePitchShift()
+    protected bool BuildIsDroneMinimizePitchShift()
     {
         return false;
     }
 
-    protected bool buildIsMuteOnChangeFretSameString()
+    protected bool BuildIsMuteOnChangeFretSameString()
     {
         return true;
     }
 
-    protected bool buildIsAutoLoop()
+    protected bool BuildIsAutoLoop()
     {
         return true;
     }
 
-    protected bool buildIsPitchBend()
+    protected bool BuildIsPitchBend()
     {
         return false;
     }
 
-    protected bool buildIsAutoLoopKeepNoteUntilNewNote()
+    protected bool BuildIsAutoLoopKeepNoteUntilNewNote()
     {
         return true;
     }

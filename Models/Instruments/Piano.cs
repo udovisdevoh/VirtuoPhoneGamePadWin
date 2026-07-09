@@ -12,62 +12,62 @@ public class Piano : Instrument
     {
     }
 
-    protected void loadSamples()
+    protected void BoadSamples()
     {
-        addSample(new Note(Note.E, 0), R.raw.pianoe0);
-        addSample(new Note(Note.A, 0), R.raw.pianoa0);
-        addSample(new Note(Note.D, 1), R.raw.pianod1);
-        addSample(new Note(Note.G, 1), R.raw.pianog1);
-        addSample(new Note(Note.B, 1), R.raw.pianob1);
-        addSample(new Note(Note.E, 2), R.raw.pianoe2);
-        addSample(new Note(Note.A, 2), R.raw.pianoa2);
-        addSample(new Note(Note.D, 3), R.raw.pianod3);
-        addSample(new Note(Note.G, 3), R.raw.pianog3);
-        addSample(new Note(Note.B, 3), R.raw.pianob3);
-        addSample(new Note(Note.E, 4), R.raw.pianoe4);
+        addSample(new Note(Note.E, 0), R.Raw.pianoe0);
+        addSample(new Note(Note.A, 0), R.Raw.pianoa0);
+        addSample(new Note(Note.D, 1), R.Raw.pianod1);
+        addSample(new Note(Note.G, 1), R.Raw.pianog1);
+        addSample(new Note(Note.B, 1), R.Raw.pianob1);
+        addSample(new Note(Note.E, 2), R.Raw.pianoe2);
+        addSample(new Note(Note.A, 2), R.Raw.pianoa2);
+        addSample(new Note(Note.D, 3), R.Raw.pianod3);
+        addSample(new Note(Note.G, 3), R.Raw.pianog3);
+        addSample(new Note(Note.B, 3), R.Raw.pianob3);
+        addSample(new Note(Note.E, 4), R.Raw.pianoe4);
     }
 
-    protected void loadDrone(Context context)
+    protected void LoadDrone(Context context)
     {
         //setDrone(new Drone(Note.E, R.raw.violine2, 0.3f), context);
     }
 
-    protected int buildMinPitchToPlay()
+    protected int BuildMinPitchToPlay()
     {
         return new Note(Note.CSharp, 0).getPitch();
     }
 
-    protected int buildStringCount()
+    protected int BuildStringCount()
     {
         return 8;
     }
 
-    protected bool buildIsMuteOnChangeFretSameString()
+    protected bool BuildIsMuteOnChangeFretSameString()
     {
         return false;
     }
 
-    protected bool buildIsAutoLoop()
+    protected bool BuildIsAutoLoop()
     {
         return false;
     }
 
-    protected bool buildIsPitchBend()
+    protected bool BuildIsPitchBend()
     {
         return false;
     }
 
-    protected bool buildIsLazyHarmonicDrone()
+    protected bool BuildIsLazyHarmonicDrone()
     {
         return false;
     }
 
-    protected bool buildIsDroneMinimizePitchShift()
+    protected bool BuildIsDroneMinimizePitchShift()
     {
         return false;
     }
 
-    protected bool buildIsAutoLoopKeepNoteUntilNewNote()
+    protected bool BuildIsAutoLoopKeepNoteUntilNewNote()
     {
         return false;
     }
