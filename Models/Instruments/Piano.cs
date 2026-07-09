@@ -8,9 +8,8 @@ namespace VirtuoPhone.Models;
 
 public class Piano : Instrument
 {
-    public Piano(Context context)
+    public Piano(Context context) : base(context)
     {
-        base(context);
     }
 
     protected void loadSamples()

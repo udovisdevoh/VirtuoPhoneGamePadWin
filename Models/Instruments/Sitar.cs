@@ -7,9 +7,8 @@ using System.Drawing;
 namespace VirtuoPhone.Models;
 public class Sitar : Instrument
 {
-    public Sitar(Context context)
+    public Sitar(Context context) : base(context)
     {
-        base(context);
     }
 
     protected void loadSamples()

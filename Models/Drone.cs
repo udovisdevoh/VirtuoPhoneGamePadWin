@@ -56,7 +56,7 @@ public class Drone
 
         if (isMinimizePitchShift())
         {
-            chordFundamentalNoteType = getClosestHarmonizedPitchToOriginalSample(chordFundamentalNoteType);
+            chordFundamentalNoteType = GetClosestHarmonizedPitchToOriginalSample(chordFundamentalNoteType);
         }
 
         bool isDroneNeedToChangeForChord;

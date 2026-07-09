@@ -13,9 +13,8 @@ namespace VirtuoPhone.Models;
 
 public class JewsHarp : Instrument
 {
-    public JewsHarp(Context context)
+    public JewsHarp(Context context) : base(context)
     {
-        base(context);
     }
 
     protected void loadSamples()

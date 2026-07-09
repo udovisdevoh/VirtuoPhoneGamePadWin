@@ -7,9 +7,8 @@ using System.Drawing;
 namespace VirtuoPhone.Models;
 public class Harp : Instrument
 {
-    public Harp(Context context)
+    public Harp(Context context) : base(context)
     {
-        base(context);
     }
 
     protected void loadSamples()

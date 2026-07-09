@@ -8,9 +8,8 @@ namespace VirtuoPhone.Models;
 
 public class Harpsichord : Instrument
 {
-    public Harpsichord(Context context)
+    public Harpsichord(Context context) : base(context)
     {
-        base(context);
     }
 
     protected void loadSamples()

@@ -8,9 +8,8 @@ namespace VirtuoPhone.Models;
 
 public class Synth : Instrument
 {
-    public Synth(Context context)
+    public Synth(Context context) : base(context)
     {
-        base(context);
     }
 
     protected void loadSamples()

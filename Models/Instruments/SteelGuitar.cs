@@ -7,9 +7,8 @@ using System.Drawing;
 namespace VirtuoPhone.Models;
 public class SteelGuitar : Instrument
 {
-    public SteelGuitar(Context context)
+    public SteelGuitar(Context context) : base(context)
     {
-        base(context);
     }
 
     protected void loadSamples()

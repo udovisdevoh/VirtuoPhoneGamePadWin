@@ -88,7 +88,7 @@ public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
 
     public int GetChordFundamentalNoteTypeAt(Point coordinates)
     {
-        Chord chord = chordList[coordinates.y];
+        Chord chord = chordList[coordinates.Y];
         Note note = chord[0];
         return note.getPitch() % 12;
     }
