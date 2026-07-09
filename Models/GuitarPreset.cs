@@ -11,19 +11,11 @@ public class GuitarPreset : IEnumerable<Chord>
     private string name = string.Empty;
 
     private List<Chord> chordList = new List<Chord>();
-
-    /**
-    * Create new emptu preset
-    */
     public GuitarPreset()
     {
         name = "Untitled";
     }
 
-    /**
-    * Create preset from serialized string
-    * @param serialized preset as string
-    */
     public GuitarPreset(string serialized)
     {
         serialized = serialized.Replace('\r', '\n');
@@ -32,7 +24,7 @@ public class GuitarPreset : IEnumerable<Chord>
         name = lineList[0].Trim();
 
         for (int i = 1; i < lineList.Length; i++)
-    {
+        {
             string chordAsString = lineList[i].Trim();
             if (chordAsString.Length > 1)
             {
@@ -61,7 +53,7 @@ public class GuitarPreset : IEnumerable<Chord>
     public void SetChord(int index, Chord chord)
     {
         while (index >= chordList.Count)
-        chordList.Add(new Chord(Note.E, ChordType.m));
+            chordList.Add(new Chord(Note.E, ChordType.m));
         chordList[index] = chord;
     }
 
@@ -75,7 +67,7 @@ public class GuitarPreset : IEnumerable<Chord>
         return chordList.Count;
     }
 
-    public Note getNoteAt(Point coordinates)
+    public Note GetNoteAt(Point coordinates)
     {
         Chord chord = chordList[coordinates.Y];
         Note note = chord[coordinates.X];
@@ -108,23 +100,23 @@ public class GuitarPreset : IEnumerable<Chord>
         return stringBuilder.ToString();
     }
 
-    public void replaceChord(Chord oldChord, Chord newChord)
+    public void ReplaceChord(Chord oldChord, Chord newChord)
     {
         int index = chordList.IndexOf(oldChord);
         chordList[index] = newChord;
     }
 
-    public void removeChord(Chord chord)
+    public void RemoveChord(Chord chord)
     {
         chordList.Remove(chord);
     }
 
-    public void add(Chord chord)
+    public void Add(Chord chord)
     {
         chordList.Add(chord);
     }
 
-    public void regenerateChords()
+    public void RegenerateChords()
     {
         int index = 0;
         foreach (Chord chord in chordList)

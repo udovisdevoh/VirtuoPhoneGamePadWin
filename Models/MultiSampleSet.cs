@@ -6,10 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
-
-
-
-
 public class MultiSampleSet : IEnumerable<Sample>
 {
     private List<Sample> sampleList;

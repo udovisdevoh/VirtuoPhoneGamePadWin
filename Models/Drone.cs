@@ -6,8 +6,6 @@ using System.Drawing;
 
 namespace VirtuoPhone.Models;
 
-#warning Cleanup en cours, rendu à ce fichier, faire le cleanup pour le reste aussi
-
 public class Drone
 {
     private bool isLazyHarmonic = false;

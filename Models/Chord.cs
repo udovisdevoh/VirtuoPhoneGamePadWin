@@ -82,98 +82,20 @@ public class Chord : IEnumerable<Note>
                 noteList.Add(new Note(Note.F, 5));
                 break;
             case ChordType.five:
-                if (noteType == Note.G)
-                {
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.B, 3));
-                    noteList.Add(new Note(Note.E, 4));
-                    noteList.Add(new Note(Note.B, 4));
-                    noteList.Add(new Note(Note.E, 5));
-                }
-                else
-                {
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.B, 3));
-                    noteList.Add(new Note(Note.E, 4));
-                    noteList.Add(new Note(Note.B, 4));
-                    noteList.Add(new Note(Note.E, 5));
-                    noteList.Add(new Note(Note.B, 5));
-                }
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.B, 3));
+                noteList.Add(new Note(Note.E, 4));
+                noteList.Add(new Note(Note.B, 4));
+                noteList.Add(new Note(Note.E, 5));
+                noteList.Add(new Note(Note.B, 5));
                 break;
             case ChordType.m:
-                if (noteType == Note.A)
-                {
-                    noteList.Add(new Note(Note.A, 2));
-                    noteList.Add(new Note(Note.A, 2));
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.A, 3));
-                    noteList.Add(new Note(Note.C, 4));
-                    noteList.Add(new Note(Note.E, 4));
-                }
-                else if (noteType == Note.D)
-                {
-                    noteList.Add(new Note(Note.D, 3));
-                    noteList.Add(new Note(Note.D, 3));
-                    noteList.Add(new Note(Note.D, 3));
-                    noteList.Add(new Note(Note.A, 3));
-                    noteList.Add(new Note(Note.D, 4));
-                    noteList.Add(new Note(Note.F, 4));
-                }
-                else if (noteType == Note.DSharp)
-                {
-                    noteList.Add(new Note(Note.D, 3));
-                    noteList.Add(new Note(Note.D, 3));
-                    noteList.Add(new Note(Note.F, 3));
-                    noteList.Add(new Note(Note.A, 3));
-                    noteList.Add(new Note(Note.D, 4));
-                    noteList.Add(new Note(Note.F, 4));
-                }
-                else if (noteType == Note.E)
-                {
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.B, 3));
-                    noteList.Add(new Note(Note.E, 4));
-                    noteList.Add(new Note(Note.G, 4));
-                    noteList.Add(new Note(Note.B, 4));
-                    noteList.Add(new Note(Note.E, 5));
-                }
-                else if (noteType == Note.C)
-                {
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.DSharp, 3));
-                    noteList.Add(new Note(Note.G, 3));
-                    noteList.Add(new Note(Note.C, 4));
-                    noteList.Add(new Note(Note.DSharp, 4));
-                }
-                else if (noteType == Note.B || noteType == Note.ASharp || noteType == Note.CSharp)
-                {
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.B, 3));
-                    noteList.Add(new Note(Note.E, 4));
-                    noteList.Add(new Note(Note.G, 4));
-                    noteList.Add(new Note(Note.B, 4));
-                }
-                else if (noteType == Note.GSharp)
-                {
-                    noteList.Add(new Note(Note.GSharp, 3));
-                    noteList.Add(new Note(Note.B, 3));
-                    noteList.Add(new Note(Note.DSharp, 4));
-                    noteList.Add(new Note(Note.GSharp, 4));
-                    noteList.Add(new Note(Note.DSharp, 5));
-                    noteList.Add(new Note(Note.GSharp, 5));
-                }
-                else
-                {
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.B, 3));
-                    noteList.Add(new Note(Note.E, 4));
-                    noteList.Add(new Note(Note.G, 4));
-                    noteList.Add(new Note(Note.B, 4));
-                    noteList.Add(new Note(Note.E, 5));
-                }
+                noteList.Add(new Note(Note.E, 2));
+                noteList.Add(new Note(Note.A, 2));
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.B, 3));
+                noteList.Add(new Note(Note.E, 4));
                 break;
             case ChordType.m11:
                 noteList.Add(new Note(Note.E, 3));
@@ -200,24 +122,12 @@ public class Chord : IEnumerable<Note>
                 noteList.Add(new Note(Note.E, 5));
                 break;
             case ChordType.m7:
-                if (noteType == Note.D)
-                {
-                    noteList.Add(new Note(Note.D, 2));
-                    noteList.Add(new Note(Note.D, 2));
-                    noteList.Add(new Note(Note.D, 2));
-                    noteList.Add(new Note(Note.A, 2));
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.F, 3));
-                }
-                else
-                {
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.B, 3));
-                    noteList.Add(new Note(Note.E, 4));
-                    noteList.Add(new Note(Note.G, 4));
-                    noteList.Add(new Note(Note.D, 5));
-                    noteList.Add(new Note(Note.E, 5));
-                }
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.B, 3));
+                noteList.Add(new Note(Note.E, 4));
+                noteList.Add(new Note(Note.G, 4));
+                noteList.Add(new Note(Note.D, 5));
+                noteList.Add(new Note(Note.E, 5));
                 break;
             case ChordType.m9:
                 noteList.Add(new Note(Note.E, 3));
@@ -228,84 +138,12 @@ public class Chord : IEnumerable<Note>
                 noteList.Add(new Note(Note.FSharp, 5));
                 break;
             case ChordType.maj:
-                /*noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.E, 2));
+                noteList.Add(new Note(Note.A, 2));
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.GSharp, 3));
                 noteList.Add(new Note(Note.B, 3));
-                noteList.Add(new Note(Note.D, 4));
-                noteList.Add(new Note(Note.G, 4));
-                noteList.Add(new Note(Note.B, 4));
-                noteList.Add(new Note(Note.G, 5));*/
-                if (noteType == Note.G)
-                {
-                    noteList.Add(new Note(Note.G, 3));
-                    noteList.Add(new Note(Note.B, 3));
-                    noteList.Add(new Note(Note.D, 4));
-                    noteList.Add(new Note(Note.G, 4));
-                    noteList.Add(new Note(Note.B, 4));
-                    noteList.Add(new Note(Note.G, 5));
-                }
-                else if (noteType == Note.C || noteType == Note.CSharp)
-                {
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.G, 3));
-                    noteList.Add(new Note(Note.C, 4));
-                    noteList.Add(new Note(Note.E, 4));
-                }
-                else if (noteType == Note.F)
-                {
-                    noteList.Add(new Note(Note.F, 3));
-                    noteList.Add(new Note(Note.C, 4));
-                    noteList.Add(new Note(Note.F, 4));
-                    noteList.Add(new Note(Note.A, 4));
-                    noteList.Add(new Note(Note.C, 5));
-                    noteList.Add(new Note(Note.F, 5));
-                }
-                else if (noteType == Note.A)
-                {
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.G, 3));
-                    noteList.Add(new Note(Note.C, 4));
-                    noteList.Add(new Note(Note.E, 4));
-                    noteList.Add(new Note(Note.G, 4));
-                }
-                else if (noteType == Note.D || noteType == Note.DSharp)
-                {
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.G, 3));
-                    noteList.Add(new Note(Note.C, 4));
-                    noteList.Add(new Note(Note.E, 4));
-                }
-                else if (noteType == Note.B || noteType == Note.ASharp)
-                {
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.G, 3));
-                    noteList.Add(new Note(Note.C, 4));
-                    noteList.Add(new Note(Note.E, 4));
-                    noteList.Add(new Note(Note.G, 4));
-                }
-                else if (noteType == Note.GSharp)
-                {
-                    noteList.Add(new Note(Note.GSharp, 3));
-                    noteList.Add(new Note(Note.C, 4));
-                    noteList.Add(new Note(Note.DSharp, 4));
-                    noteList.Add(new Note(Note.GSharp, 4));
-                    noteList.Add(new Note(Note.C, 5));
-                    noteList.Add(new Note(Note.DSharp, 5));
-                }
-                else
-                {
-                    noteList.Add(new Note(Note.C, 3));
-                    noteList.Add(new Note(Note.G, 3));
-                    noteList.Add(new Note(Note.C, 4));
-                    noteList.Add(new Note(Note.E, 4));
-                    noteList.Add(new Note(Note.G, 4));
-                    noteList.Add(new Note(Note.C, 5));
-                }
+                noteList.Add(new Note(Note.E, 4));
                 break;
             case ChordType.maj13:
                 noteList.Add(new Note(Note.G, 3));
@@ -356,24 +194,12 @@ public class Chord : IEnumerable<Note>
                 noteList.Add(new Note(Note.F, 5));
                 break;
             case ChordType.seven:
-                if (noteType == Note.A)
-                {
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.B, 3));
-                    noteList.Add(new Note(Note.D, 4));
-                    noteList.Add(new Note(Note.GSharp, 4));
-                    noteList.Add(new Note(Note.B, 4));
-                }
-                else
-                {
-                    noteList.Add(new Note(Note.E, 3));
-                    noteList.Add(new Note(Note.B, 3));
-                    noteList.Add(new Note(Note.D, 4));
-                    noteList.Add(new Note(Note.GSharp, 4));
-                    noteList.Add(new Note(Note.B, 4));
-                    noteList.Add(new Note(Note.E, 5));
-                }
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.B, 3));
+                noteList.Add(new Note(Note.E, 4));
+                noteList.Add(new Note(Note.GSharp, 4));
+                noteList.Add(new Note(Note.B, 4));
+                noteList.Add(new Note(Note.D, 5));
                 break;
             case ChordType.sevenBFive:
                 noteList.Add(new Note(Note.G, 3));
@@ -516,12 +342,16 @@ public class Chord : IEnumerable<Note>
         name = noteList[0].GetName() + " " + chordType.ToString();
 
         if (instrument.GetStringCount() > 6)
-            StringExpander.addMoreNotes(this, instrument.GetStringCount());
+        {
+            StringExpander.AddMoreNotes(this, instrument.GetStringCount());
+        }
 
         FixDuplicateNoteToOctave();
 
         if (instrument.GetStringCount() < 6)
-            StringExpander.removeSomeNotes(this, instrument.GetStringCount());
+        {
+            StringExpander.RemoveSomeNotes(this, instrument.GetStringCount());
+        }
     }
 
     /**
@@ -549,9 +379,9 @@ public class Chord : IEnumerable<Note>
         }
 
         if (instrument.GetStringCount() > 6)
-            StringExpander.addMoreNotes(this, instrument.GetStringCount());
+            StringExpander.AddMoreNotes(this, instrument.GetStringCount());
         else if (instrument.GetStringCount() < 6)
-            StringExpander.removeSomeNotes(this, instrument.GetStringCount());
+            StringExpander.RemoveSomeNotes(this, instrument.GetStringCount());
     }
 
     private void FixDuplicateNoteToOctave()

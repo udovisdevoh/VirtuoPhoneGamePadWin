@@ -10,7 +10,7 @@ public class StringExpander
 {
     private static Dictionary<int, int> listNoteTypeCount = new Dictionary<int, int>();
 
-    public static void addMoreNotes(Chord chord, int desiredStringCount)
+    public static void AddMoreNotes(Chord chord, int desiredStringCount)
     {
 
         int stringCountToAdd = desiredStringCount - chord.Count;
@@ -19,17 +19,17 @@ public class StringExpander
         {
             if (stringCountToAdd % 3 == 1)
             {
-                reduceOctaveAllNotes(chord);
+                ReduceOctaveAllNotes(chord);
             }
 
-            int rarestNote = getRarestNote(chord);
+            int rarestNote = GetRarestNote(chord);
 
             Note newNote = new Note(rarestNote);
 
             int lastPitch = chord.LastPitch();
 
             while (chord.ContainsExact(newNote) || newNote.GetPitch() <= lastPitch)
-            newNote.SetPitch(newNote.GetPitch() + 12);
+                newNote.SetPitch(newNote.GetPitch() + 12);
 
             chord.AddNote(newNote);
 
@@ -37,7 +37,7 @@ public class StringExpander
         }
     }
 
-    public static void removeSomeNotes(Chord chord, int desiredStringCount)
+    public static void RemoveSomeNotes(Chord chord, int desiredStringCount)
     {
         int stringCountToRemove = chord.Count - desiredStringCount;
 
@@ -45,20 +45,20 @@ public class StringExpander
 
         while (stringCountToRemove > 0)
         {
-            int mostFrequentNoteType = getMostFrequentNote(chord);
-            Note mostExtremeNote = getMostExtremeNote(chord, mostFrequentNoteType, averagePitch);
+            int mostFrequentNoteType = GetMostFrequentNote(chord);
+            Note mostExtremeNote = GetMostExtremeNote(chord, mostFrequentNoteType, averagePitch);
             chord.Remove(mostExtremeNote);
             stringCountToRemove--;
         }
     }
 
-    private static Note getMostExtremeNote(Chord chord, int noteType, int averagePitch)
+    private static Note GetMostExtremeNote(Chord chord, int noteType, int averagePitch)
     {
         Note mostExtremeNote = null;
         int largestDifference = -1;
         int currentDifference;
 
-        foreach (Note note  in chord)
+        foreach (Note note in chord)
         {
             if (note.GetPitch() % 12 == noteType)
             {
@@ -74,13 +74,14 @@ public class StringExpander
         return mostExtremeNote;
     }
 
-    private static int getRarestNote(Chord chord)
+    private static int GetRarestNote(Chord chord)
     {
         int rarestNote = 0;
 
-        lock(listNoteTypeCount) {
+        lock (listNoteTypeCount)
+        {
             listNoteTypeCount.Clear();
-            foreach (Note note  in chord)
+            foreach (Note note in chord)
             {
                 if (note != null)
                 {
@@ -97,7 +98,7 @@ public class StringExpander
             }
 
             int rarestCount = -1;
-            foreach (int pitch  in listNoteTypeCount.Keys)
+            foreach (int pitch in listNoteTypeCount.Keys)
             {
                 int count = listNoteTypeCount[pitch];
 
@@ -112,13 +113,14 @@ public class StringExpander
         return rarestNote;
     }
 
-    private static int getMostFrequentNote(Chord chord)
+    private static int GetMostFrequentNote(Chord chord)
     {
         int mostFrequentNote = 0;
 
-        lock(listNoteTypeCount) {
+        lock (listNoteTypeCount)
+        {
             listNoteTypeCount.Clear();
-            foreach (Note note  in chord)
+            foreach (Note note in chord)
             {
                 if (note != null)
                 {
@@ -135,7 +137,7 @@ public class StringExpander
             }
 
             int mostFrequentCount = -1;
-            foreach (int pitch  in listNoteTypeCount.Keys)
+            foreach (int pitch in listNoteTypeCount.Keys)
             {
                 int count = listNoteTypeCount[pitch];
 
@@ -150,9 +152,9 @@ public class StringExpander
         return mostFrequentNote;
     }
 
-    private static void reduceOctaveAllNotes(Chord chord)
+    private static void ReduceOctaveAllNotes(Chord chord)
     {
-        foreach (Note note  in chord)
+        foreach (Note note in chord)
         {
             note.SetPitch(note.GetPitch() - 12);
         }
