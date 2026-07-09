@@ -1,122 +1,147 @@
-package com.virtuophone.models;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
+using System.Drawing;
 
-import java.util.ArrayList;
-import java.util.Iterator;
+namespace VirtuoPhone.Models;
 
 
-import android.graphics.Point;
+
+
+
+
 
 /**
- * @author Guillaume Lacasse
- * Chord preset
- */
-public class GuitarPreset implements Iterable<Chord>, StringSerializable {
-	private String name = null;
-	
-	private ArrayList<Chord> chordList = new ArrayList<Chord>();
-	
-	/**
-	 * Create new emptu preset
-	 */
-	public GuitarPreset() {
-		name = "Untitled";
-	}
+* @author Guillaume Lacasse
+* Chord preset
+*/
+public class GuitarPreset : IEnumerable<Chord>, IStringSerializable
+{
+    private string name = null;
 
-	/**
-	 * Create preset from serialized string
-	 * @param serialized preset as string
-	 */
-	public GuitarPreset(String serialized) {
-		serialized = serialized.replace('\r', '\n');
-		String[] lineList = serialized.split("\n");
-		
-		name = lineList[0].trim();
-		
-		for (int i = 1; i < lineList.length; i++) {
-			String chordAsString = lineList[i].trim();
-			if (chordAsString.length() > 1) {
-				Chord chord = new Chord(chordAsString);
-				chordList.add(chord);
-			}
-		}
-	}
+    private List<Chord> chordList = new List<Chord>();
 
-	/**
-	 * @return custom name for preset
-	 */
-	public String getName() {
-		return name;
-	}
+    /**
+    * Create new emptu preset
+    */
+    public GuitarPreset()
+    {
+        name = "Untitled";
+    }
 
-	/**
-	 * @param name custom name for preset
-	 */
-	public void setName(String name) {
-		this.name = name;
-	}
-	
-	public void setChord(int index, Chord chord) {
-		while (index >= chordList.size())
-			chordList.add(new Chord(Note.E,ChordType.m));
-		chordList.set(index, chord);
-	}
+    /**
+    * Create preset from serialized string
+    * @param serialized preset as string
+    */
+    public GuitarPreset(string serialized)
+    {
+        serialized = serialized.Replace('\r', '\n');
+        string[] lineList = serialized.Split("\n");
 
-	@Override
-	public Iterator<Chord> iterator() {
-		return chordList.iterator();
-	}
+        name = lineList[0].Trim();
 
-	public int size() {
-		return chordList.size();
-	}
+        foreach (int i = 1; i < lineList.Length; i++) {
+            string chordAsString = lineList[i].Trim();
+            if (chordAsString.Length > 1)
+            {
+                Chord chord = new Chord(chordAsString);
+                chordList.Add(chord);
+            }
+        }
+    }
 
-	public Note getNoteAt(Point coordinates) {
-		Chord chord = chordList.get(coordinates.y);
-		Note note = chord.get(coordinates.x);
-		return note;
-	}
-	
-	public int getChordFundamentalNoteTypeAt(Point coordinates) {
-		Chord chord = chordList.get(coordinates.y);
-		Note note = chord.get(0);
-		return note.getPitch() % 12;
-	}
-	
-	public String serialize() {
-		StringBuilder stringBuilder = new StringBuilder();
-		
-		stringBuilder.append(name.trim());
-		stringBuilder.append('\r');
-		
-		for (Chord chord : chordList) {
-			if (chord != null) {
-				stringBuilder.append(chord.serialize().trim());
-				stringBuilder.append('\r');
-			}
-		}
-		
-		return stringBuilder.toString();
-	}
+    /**
+    * @return custom name for preset
+    */
+    public string GetName()
+    {
+        return name;
+    }
 
-	public void replaceChord(Chord oldChord, Chord newChord) {
-		int index = chordList.indexOf(oldChord);
-		chordList.set(index, newChord);
-	}
+    /**
+    * @param name custom name for preset
+    */
+    public void setName(string name)
+    {
+        this.name = name;
+    }
 
-	public void removeChord(Chord chord) {
-		chordList.remove(chordList.indexOf(chord));
-	}
+    public void setChord(int index, Chord chord)
+    {
+        while (index >= chordList.Count)
+        chordList.Add(new Chord(Note.E, ChordType.m));
+        chordList[index] = chord;
+    }
 
-	public void add(Chord chord) {
-		chordList.add(chord);
-	}
+    public IEnumerator<Chord> iterator()
+    {
+        return chordList.GetEnumerator();
+    }
 
-	public void regenerateChords() {
-		int index = 0;
-		for (Chord chord : chordList) {
-			Chord newChord = new Chord(chord.getNoteType(), Chord.getChordTypeFromId(chord.getChordTypeId()));
-			chordList.set(index, newChord);
-			index++;
-		}
-	}
+    public int size()
+    {
+        return chordList.Count;
+    }
+
+    public Note getNoteAt(Point coordinates)
+    {
+        Chord chord = chordList[coordinates.y];
+        Note note = chord[coordinates.x];
+        return note;
+    }
+
+    public int GetChordFundamentalNoteTypeAt(Point coordinates)
+    {
+        Chord chord = chordList[coordinates.y];
+        Note note = chord[0];
+        return note.getPitch() % 12;
+    }
+
+    public string serialize()
+    {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.Append(name.Trim());
+        stringBuilder.Append('\r');
+
+        for (Chord chord in chordList)
+        {
+            if (chord != null)
+            {
+                stringBuilder.Append(chord.serialize().Trim());
+                stringBuilder.Append('\r');
+            }
+        }
+
+        return stringBuilder.ToString();
+    }
+
+    public void replaceChord(Chord oldChord, Chord newChord)
+    {
+        int index = chordList.indexOf(oldChord);
+        chordList[index] = newChord;
+    }
+
+    public void removeChord(Chord chord)
+    {
+        chordList.Remove(chordList.indexOf(chord));
+    }
+
+    public void add(Chord chord)
+    {
+        chordList.Add(chord);
+    }
+
+    public void regenerateChords()
+    {
+        int index = 0;
+        foreach (Chord chord in chordList)
+        {
+            Chord newChord = new Chord(chord.getNoteType(), Chord.getChordTypeFromId(chord.getChordTypeId()));
+            chordList[index] = newChord;
+            index++;
+        }
+    }
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

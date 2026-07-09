@@ -1,5 +1,12 @@
-package com.virtuophone.models;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
+using System.Drawing;
 
-public interface StringSerializable {
-	String serialize();
+namespace VirtuoPhone.Models;
+
+public interface IStringSerializable
+{
+    string serialize();
 }
