@@ -64,8 +64,10 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
 - **Audio:** **NAudio** (decode `.ogg` via **NVorbis**), output via **WASAPI**. Put it behind an **`ISoundPool`**
   abstraction (same surface as §5) so the backend (WASAPI shared/exclusive, later ASIO) is swappable. Latency
   target: responsive like a game controller / keyboard — low, not pro-gamer-extreme.
-- **Input:** **DirectInput/HID** (or a standard Windows joystick), behind an **`IControllerInput`** abstraction,
-  with a **keyboard** implementation for dev. Keep it open to other backends.
+- **Input:** **DirectInput/HID** (or a standard Windows joystick), behind an **`IControllerInput`** abstraction
+  that treats **gamepad and keyboard uniformly**. A **remap menu** binds each musical/system action to either a
+  controller button/axis *or* a keyboard key. Keep it open to other backends.
+  *(Dev/test device: a Mayflash F500 Elite is connected via USB and available for live input capture.)*
 - **UI:** deferred; core stays headless and decoupled so any UI (WinForms/WPF/Avalonia) can bind later.
 - **Resource ids (`R.Raw.*`):** resolved with an **auto-generated `R` class** (int ids → `res/raw/<name>.ogg`),
   generated from the union of code references and bundled files; regenerate when samples change.
@@ -156,7 +158,8 @@ Must be highly responsive: crisp execution, rapid directional inputs, low-latenc
       other cells scale relatively (interval math on the 3×3 grid).
     - *Double press:* force the new neutral cell to be **minor**; other cells keep their explicit preset value
       or default to major.
-- **Remappable controls:** every action should be rebindable per controller via the JSON config.
+- **Remappable controls:** a **remap menu** lets every action be rebound to a controller button/axis **or a
+  keyboard key** (keyboard and gamepad are interchangeable input sources), persisted in the JSON config.
 
 ---
 
