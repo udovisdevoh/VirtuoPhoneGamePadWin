@@ -50,12 +50,25 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
 
 ## 3. Tech Stack & Architecture
 - **Language / runtime:** C# on **.NET 8.0** (`net8.0`, `ImplicitUsings=enable`, `Nullable=enable`).
-- **Output:** Console `Exe` today; **must become a real UI** (WinForms/WPF/other — not yet decided).
+- **Output:** Console `Exe` today; a real UI comes later (framework deferred — keep the core headless/decoupled;
+  when built, favor simple-to-maintain + performant).
 - **Configuration:** target is human-readable **JSON** for hardware mapping + musical presets (not built yet).
 - **Audio Engine:** custom low-latency C# engine modeled on Android `SoundPool` (pre-loaded buffers,
   real-time polyphonic playback, per-stream rate/volume for pitch-shift). Currently faked by `DummySoundPool`.
 - **Namespaces:** root `VirtuoPhone` (`AppController`, `DummySoundPool`, `PointerMemory`) and
   `VirtuoPhone.Models` (everything under `Models/`). Note: files in `Audio/` use the root `VirtuoPhone` namespace.
+
+### Decisions (2026-07-10)
+- **Approach:** build a **vertical slice first** — one instrument + one hard-coded preset + the real F500 → sound —
+  and measure end-to-end latency before adding breadth.
+- **Audio:** **NAudio** (decode `.ogg` via **NVorbis**), output via **WASAPI**. Put it behind an **`ISoundPool`**
+  abstraction (same surface as §5) so the backend (WASAPI shared/exclusive, later ASIO) is swappable. Latency
+  target: responsive like a game controller / keyboard — low, not pro-gamer-extreme.
+- **Input:** **DirectInput/HID** (or a standard Windows joystick), behind an **`IControllerInput`** abstraction,
+  with a **keyboard** implementation for dev. Keep it open to other backends.
+- **UI:** deferred; core stays headless and decoupled so any UI (WinForms/WPF/Avalonia) can bind later.
+- **Resource ids (`R.Raw.*`):** resolved with an **auto-generated `R` class** (int ids → `res/raw/<name>.ogg`),
+  generated from the union of code references and bundled files; regenerate when samples change.
 
 ---
 
