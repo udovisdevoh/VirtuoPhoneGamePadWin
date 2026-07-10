@@ -42,7 +42,7 @@ public class Drone
         this.volumeAdjustSpeedMultiplicator = volumeAdjustSpeedMultiplicator;
     }
 
-    public void OnPlayNoteUpdate(SoundPool soundPool, GuitarPreset guitarPreset, Point coordinates)
+    public void OnPlayNoteUpdate(DummySoundPool soundPool, GuitarPreset guitarPreset, Point coordinates)
     {
         int droneFundamentalNoteType = currentChord;
 
@@ -83,7 +83,7 @@ public class Drone
         }
     }
 
-    private void SetVolume(SoundPool soundPool, float volumeToSet)
+    private void SetVolume(DummySoundPool soundPool, float volumeToSet)
     {
         volume = volumeToSet;
         if (streamId > 0)
@@ -92,13 +92,13 @@ public class Drone
         }
     }
 
-    public void OnTickUpdate(SoundPool soundPool)
+    public void OnTickUpdate(DummySoundPool soundPool)
     {
         AdjustPicth(soundPool);
         AutoAdjustVolumeDecreaseWithTime(soundPool);
     }
 
-    private void AutoAdjustVolumeDecreaseWithTime(SoundPool soundPool)
+    private void AutoAdjustVolumeDecreaseWithTime(DummySoundPool soundPool)
     {
         if (volume > 0 && volumeAdjustSpeedMultiplicator > 0f)
         {
@@ -111,7 +111,7 @@ public class Drone
         }
     }
 
-    private void AdjustPicth(SoundPool soundPool)
+    private void AdjustPicth(DummySoundPool soundPool)
     {
         if (rate < targetRate && pitchAdjustSpeedMultiplicator > 0f)
         {
@@ -221,7 +221,7 @@ public class Drone
         return difference;
     }
 
-    public void Stop(SoundPool soundPool)
+    public void Stop(DummySoundPool soundPool)
     {
         if (streamId > 0)
         soundPool.Stop(streamId);
@@ -230,7 +230,7 @@ public class Drone
         rate = 1f;
     }
 
-    public void SetPitch(SoundPool soundPool, int desiredPitch)
+    public void SetPitch(DummySoundPool soundPool, int desiredPitch)
     {
         targetRate = GetSample().GetPitchMultiplicator(desiredPitch, 0f);
         if (pitchAdjustSpeedMultiplicator <= 0f)
@@ -243,7 +243,7 @@ public class Drone
         }
     }
 
-    public void Play(SoundPool soundPool, int desiredPitch)
+    public void Play(DummySoundPool soundPool, int desiredPitch)
     {
         desiredPitch %= 12;
 

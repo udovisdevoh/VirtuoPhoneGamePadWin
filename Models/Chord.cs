@@ -23,8 +23,8 @@ public class Chord : IEnumerable<Note>
     */
     public Chord(int noteType, ChordType chordType)
     {
-        AppController appController = AppController.getAppController();
-        Instrument instrument = appController.getInstrument();
+        AppController appController = AppController.GetAppController();
+        Instrument instrument = appController.GetInstrument();
 
         this.noteType = noteType;
 
@@ -360,8 +360,8 @@ public class Chord : IEnumerable<Note>
     */
     public Chord(string serialized)
     {
-        AppController appController = AppController.getAppController();
-        Instrument instrument = appController.getInstrument();
+        AppController appController = AppController.GetAppController();
+        Instrument instrument = appController.GetInstrument();
 
         string[] segmentList = serialized.Split(":");
 

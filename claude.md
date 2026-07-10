@@ -31,10 +31,13 @@ Presets define the 3x3 musical matrices. The application relies on human-readabl
 Matrices are conceptualized as a 3x3 grid centered around the neutral joystick position, with optional outer extensions for double-tap mechanics.
 
 
-**Example 0: E pentatonic minor, stable corners, Try this one first, center E is tonic (Double-Tap Outer Bounds)**
-| B  | Bb | A  |
-| C  | E  | F  |
-| D  | F# | G  |
+**Example 0: E pentatonic minor (EGABD), stable corners, Try this one first, center E is tonic (Double-Tap Outer Bounds)**
+
+           |Cdim7|
+      | B  |  Bb | A  |
+|Bdim7| C  |  E  | F  |C#dim7|
+      | D  |  F# | G  |
+           |Bdim7|
 
 
 
