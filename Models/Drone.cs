@@ -42,7 +42,7 @@ public class Drone
         this.volumeAdjustSpeedMultiplicator = volumeAdjustSpeedMultiplicator;
     }
 
-    public void OnPlayNoteUpdate(DummySoundPool soundPool, GuitarPreset guitarPreset, Point coordinates)
+    public void OnPlayNoteUpdate(ISoundPool soundPool, GuitarPreset guitarPreset, Point coordinates)
     {
         int droneFundamentalNoteType = currentChord;
 
@@ -83,7 +83,7 @@ public class Drone
         }
     }
 
-    private void SetVolume(DummySoundPool soundPool, float volumeToSet)
+    private void SetVolume(ISoundPool soundPool, float volumeToSet)
     {
         volume = volumeToSet;
         if (streamId > 0)
@@ -92,13 +92,13 @@ public class Drone
         }
     }
 
-    public void OnTickUpdate(DummySoundPool soundPool)
+    public void OnTickUpdate(ISoundPool soundPool)
     {
         AdjustPicth(soundPool);
         AutoAdjustVolumeDecreaseWithTime(soundPool);
     }
 
-    private void AutoAdjustVolumeDecreaseWithTime(DummySoundPool soundPool)
+    private void AutoAdjustVolumeDecreaseWithTime(ISoundPool soundPool)
     {
         if (volume > 0 && volumeAdjustSpeedMultiplicator > 0f)
         {
@@ -111,7 +111,7 @@ public class Drone
         }
     }
 
-    private void AdjustPicth(DummySoundPool soundPool)
+    private void AdjustPicth(ISoundPool soundPool)
     {
         if (rate < targetRate && pitchAdjustSpeedMultiplicator > 0f)
         {
@@ -221,7 +221,7 @@ public class Drone
         return difference;
     }
 
-    public void Stop(DummySoundPool soundPool)
+    public void Stop(ISoundPool soundPool)
     {
         if (streamId > 0)
         soundPool.Stop(streamId);
@@ -230,7 +230,7 @@ public class Drone
         rate = 1f;
     }
 
-    public void SetPitch(DummySoundPool soundPool, int desiredPitch)
+    public void SetPitch(ISoundPool soundPool, int desiredPitch)
     {
         targetRate = GetSample().GetPitchMultiplicator(desiredPitch, 0f);
         if (pitchAdjustSpeedMultiplicator <= 0f)
@@ -243,7 +243,7 @@ public class Drone
         }
     }
 
-    public void Play(DummySoundPool soundPool, int desiredPitch)
+    public void Play(ISoundPool soundPool, int desiredPitch)
     {
         desiredPitch %= 12;
 

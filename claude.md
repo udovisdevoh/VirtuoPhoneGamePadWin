@@ -22,18 +22,18 @@ The design below is largely **intended behavior**. The current code reflects onl
 |------|--------|-------|
 | Audio domain model (Instrument, Chord, Note, Drone, Sample, StringExpander…) | ✅ Ported from Java | See §4–§5 |
 | 9 instruments + ~110 `.ogg` samples in `res/raw/` | ✅ Present | Banks: guitar, bagpipes, harp, harpsichord, piano, sitar(+drone/tampura), synth, violin, jew's-harp (`guimb*`) |
-| Low-latency audio engine (SoundPool-equivalent) | 🟡 **Stub only** | `Audio/DummySoundPool.cs` is a no-op placeholder — **no sound is produced yet** |
-| **Project compiles** | ❌ **No** | Missing `R` resource class (see below) |
+| Low-latency audio engine (SoundPool-equivalent) | ✅ **Working (first cut)** | `Audio/NAudioSoundPool.cs` — WASAPI shared (~50 ms), polyphonic, per-voice pitch; behind an `ISoundPool` seam. `DummySoundPool` kept as a silent/headless backend |
+| **Project compiles & plays audio** | ✅ **Yes** | `R` class generated; NAudio + NAudio.Vorbis added; smoke test plays a polyphonic arpeggio (verified) |
 | Controller / gamepad input | ❌ Not started | No XInput/DirectInput, no F500 mapping |
 | UI | ❌ Not started | `Program.cs` is still the `Hello, World!` template |
 | JSON presets & remappable controls | ❌ Not started | Presets currently exist only as hard-coded text-serialized strings (§5), **not** JSON yet |
 | Modulation / double-tap / pitch-bend-on-move logic | ❌ Not started | Fully specified in §6, unimplemented |
 
-### Known build blocker: undefined `R.Raw.*` resource references
-Every instrument still references Android-style resource IDs — `R.Raw.guitare2`,
-`R.Raw.bagpipesdroneloopa`, etc. In Android, `R` is an **auto-generated** class mapping
-`res/raw/<name>.ogg` files to `int` IDs. That generated class was **not** ported, so the build fails
-with `CS0103: The name 'R' does not exist`.
+### Resolved — `R.Raw.*` resource ids (was the initial build blocker)
+**Fixed:** `Resources/R.cs` is auto-generated — a nested `R.Raw` of int constants plus an
+`id → res/raw/<name>.ogg` map exposed via `R.GetFileName(id)`, produced from the union of code references
+and bundled files. Every instrument resolves and the project builds; regenerate it when the sample set
+changes. `NAudioSoundPool` uses `R.GetFileName(id)` to locate each `.ogg`.
 
 **How sample resources are loaded in the C# port is an open design decision** — it does **not** have to
 copy the Android `R.raw` scheme, and the `res/raw/*.ogg` files are only a loose starting point that may
@@ -61,9 +61,11 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
 ### Decisions (2026-07-10)
 - **Approach:** build a **vertical slice first** — one instrument + one hard-coded preset + the real F500 → sound —
   and measure end-to-end latency before adding breadth.
-- **Audio:** **NAudio** (decode `.ogg` via **NVorbis**), output via **WASAPI**. Put it behind an **`ISoundPool`**
-  abstraction (same surface as §5) so the backend (WASAPI shared/exclusive, later ASIO) is swappable. Latency
-  target: responsive like a game controller / keyboard — low, not pro-gamer-extreme.
+- **Audio (built):** **`NAudioSoundPool`** = NAudio + NVorbis, behind **`ISoundPool`** (swappable via
+  `AudioBackend`). Samples are **mono 44.1 kHz**, so the engine runs at **44.1 kHz** and prefers **WASAPI
+  exclusive** (≈5 ms, bit-exact — no OS resample or effects), falling back to shared. Unshifted notes are
+  sample-accurate; only genuine pitch shifts interpolate (**cubic / Catmull-Rom**). Mix bus = per-poly
+  headroom + a **soft-knee** limiter (no hard clipping). **Do not add resampling/filtering to the sample path.**
 - **Input:** **DirectInput/HID** (or a standard Windows joystick), behind an **`IControllerInput`** abstraction
   that treats **gamepad and keyboard uniformly**. A **remap menu** binds each musical/system action to either a
   controller button/axis *or* a keyboard key. Keep it open to other backends.
@@ -80,7 +82,10 @@ VirtuoPhoneGamePadWin.csproj   .NET 8 console exe
 Program.cs                     Entry point — still "Hello, World!" stub (needs app wiring)
 AppController.cs               Singleton; STRING_COUNT=6; GetInstrument() hard-codes new SteelGuitar()
 Audio/
-  DummySoundPool.cs            No-op SoundPool stand-in (Load/Play/Stop/SetVolume/SetRate/Release)
+  ISoundPool.cs                SoundPool API surface — the swappable audio seam
+  NAudioSoundPool.cs           Real engine: NVorbis decode, WASAPI exclusive @44.1k, cubic voice mixer + soft-knee
+  DummySoundPool.cs            Silent/headless ISoundPool (tests / no audio device)
+  AudioBackend.cs              Factory selecting the ISoundPool backend (default: NAudio)
   PointerMemory.cs             Tracks active stream IDs so they can be stopped together
 Models/
   Note.cs                      Pitch as semitone int; C..B constants; pitch = noteType + octave*12
@@ -96,8 +101,8 @@ Models/
     Instrument.cs              Abstract base: preloads samples into multiSampleList[128], interpolates gaps,
                                Play/Stop/SetStreamPitch, feature flags via abstract Build*() methods
     Bagpipes, Harp, Harpsichord, JewsHarp, Piano, Sitar, SteelGuitar, Synth, Violin  (9 concrete instruments)
-res/raw/*.ogg                  ~110 sample files; loosely correspond to the R.Raw.* IDs (starting point,
-                               not a fixed resource layout — see §2)
+Resources/R.cs                 Auto-generated resource-id table (R.Raw.* -> res/raw/<name>.ogg); see §2
+res/raw/*.ogg                  ~110 mono 44.1 kHz samples; copied next to the exe at build (see .csproj)
 claude.original.prompt.md      Original French brief that seeded this project (design intent)
 ```
 
@@ -236,14 +241,14 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
 ---
 
 ## 8. Roadmap / TODO (suggested order)
-1. **Unblock the build:** resolve the undefined `R.Raw.*` references (§2) — either a quick `R.Raw` shim
-   or a redesigned resource-loading scheme. The sample-resource design is open; the repo's current names
-   are not binding.
-2. **Real audio engine:** replace `DummySoundPool` with a low-latency C# implementation (candidates:
-   NAudio / CSCore / miniaudio bindings) preserving the API in §5 and streaming `res/raw/*.ogg`.
-3. **Wire `Program.cs`:** instantiate `AppController` / an instrument and prove one note plays end-to-end.
-4. **Controller input:** poll the Mayflash F500 (XInput/DirectInput), map buttons/joystick, drive polyphony
-   off the audio thread.
+1. ✅ **Unblock the build** — `Resources/R.cs` generated; project compiles.
+2. ✅ **Audio engine** — `NAudioSoundPool` (NAudio + NVorbis, WASAPI shared ~50 ms, polyphonic, per-voice
+   pitch, tanh mix-bus limiter + voice cap) behind `ISoundPool`; swappable via `AudioBackend`.
+   `DummySoundPool` kept as the headless backend.
+3. ✅ **Prove audio end-to-end** — `Program.cs` smoke test plays an arpeggio + full strum through the
+   instrument (heard, no clipping).
+4. ⏳ **Controller input (next):** read the Mayflash F500 (DirectInput/HID) + keyboard behind
+   `IControllerInput`, map buttons→notes / joystick→chord cell, driven off the audio thread.
 5. **Preset persistence (JSON):** define the JSON schema for presets (3×3 chord layouts) and controller
    maps; implement load and save; migrate the §5 text serialization (or ship a converter).
 6. **Preset editing:** let the user build and modify chord layouts — set each joystick cell's chord

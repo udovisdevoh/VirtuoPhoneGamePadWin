@@ -7,4 +7,14 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="NAudio.Vorbis" Version="1.5.0" />
+  </ItemGroup>
+
+  <!-- Ship the sample bank next to the exe so the audio engine can load res/raw/<name>.ogg. -->
+  <ItemGroup>
+    <None Update="res\raw\*.ogg" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

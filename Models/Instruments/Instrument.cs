@@ -14,7 +14,7 @@ public abstract class Instrument : IEnumerable<Sample>
 
     private Drone? drone;
 
-    private DummySoundPool soundPool;
+    private ISoundPool soundPool;
 
     private HashSet<Sample> sampleSet;
 
@@ -43,7 +43,7 @@ public abstract class Instrument : IEnumerable<Sample>
         isAutoLoopKeepNoteUntilNewNote = BuildIsAutoLoopKeepNoteUntilNewNote();
         isPitchBend = BuildIsPitchBend();
         polyphony = stringCount * 2;
-        soundPool = new DummySoundPool(polyphony);
+        soundPool = AudioBackend.Create(polyphony);
         //streamIdByStringBeingPlayed = new int[AppController.STRING_COUNT];
         multiSampleList = new MultiSampleSet[128];
         sampleSet = new HashSet<Sample>();
@@ -292,7 +292,7 @@ public abstract class Instrument : IEnumerable<Sample>
         }
     }
 
-    public DummySoundPool GetSoundPool()
+    public ISoundPool GetSoundPool()
     {
         return soundPool;
     }

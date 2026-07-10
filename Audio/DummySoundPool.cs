@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 
-#warning Todo remove dummy and replace with real code
-
 namespace VirtuoPhone;
 
-public class DummySoundPool // Must be replaced with real soundpool.
+// Silent, headless ISoundPool backend (no audio device). The real engine is NAudioSoundPool;
+// pick one via AudioBackend. Useful for tests and for running without an audio output.
+public class DummySoundPool : ISoundPool
 {
     private int nextId = 1;
     public DummySoundPool(int polyphony) { }
