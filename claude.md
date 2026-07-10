@@ -172,6 +172,26 @@ Must be highly responsive: crisp execution, rapid directional inputs, low-latenc
 - **Remappable controls:** a **remap menu** lets every action be rebound to a controller button/axis **or a
   keyboard key** (keyboard and gamepad are interchangeable input sources), persisted in the JSON config.
 
+### Voice management & note lifecycle (planned)
+How held buttons + joystick chord changes map onto engine voices:
+- **Per-button polyphony.** Each of the 8 action buttons owns its own voice; re-pressing a button steals
+  (replaces) *that button's* previous voice — polyphony is tracked **per button**, not globally.
+  (Generalizes today's `isMuteOnChangeFretSameString` per-string mute into a per-button rule.)
+- **Chord change while holding.** If the joystick changes the active chord while buttons are held, then for
+  **each held button whose note changed**, steal that button's voice and play the new note; buttons whose
+  note is unchanged keep ringing untouched. (This is the "hold + move joystick" swap above, resolved per button.)
+- **Per-instrument note-off.** On button release, some instruments stop the note, others let it ring — this
+  is defined per instrument in the original source (see the feature flags in §5). Wire release to each
+  instrument's configured behavior.
+- **Polyphonic vs monophonic instruments.** Not every instrument is polyphonic — the **bagpipes** play one
+  melody voice at a time (monophonic chanter) no matter how many buttons are held. Mono-vs-poly follows the
+  instrument's feature flags / the original source's playing logic (bagpipes: `isAutoLoop` +
+  `isAutoLoopKeepNoteUntilNewNote` — a single sustained looping note replaced on each new press).
+- **Drone instruments.** Some instruments add a **drone** — **bagpipes** (A) and **sitar** (C# tampura) — a
+  sustained bass that tracks the chord root (the `Drone` class via `LoadDrone`/`setDrone`, with
+  lazy-harmonic / minimize-pitch-shift options). The drone is independent of the per-button note voices.
+  (Harp, harpsichord, steel guitar have no drone.)
+
 ---
 
 ## 7. Configuration & Presets
@@ -261,13 +281,20 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
    (root + `ChordType`), and rename / add / remove / duplicate / select presets — then save and reload them.
    The model already has the primitives (`GuitarPreset.SetChord/ReplaceChord/RemoveChord/Add/RegenerateChords`,
    `Chord.SetFundamental`); this adds the authoring workflow (its editor UI lands with the UI work below).
-7. **Interaction logic:** joystick-cell selection, held-note pitch-bend/swap, double-tap dash, Start modulation.
+7. **Interaction logic & voice management:** joystick-cell selection, **per-button polyphony**,
+   **monophonic instruments** (e.g. bagpipes) and **drones** (bagpipes, sitar), held-note **swap on chord
+   change** (steal only the buttons whose note changed), **per-instrument note-off** (stop-on-release vs.
+   let-ring), double-tap dash, Start modulation. See §6 "Voice management".
 8. **UI:** replace the console with a real UI showing the active cell, instrument, and note layout,
    and hosting the preset editor from step 6.
 9. **Configurable audio (eventually):** expose the engine's currently baked-in choices as user settings
    (in the JSON config) — output **latency**, **exclusive vs shared**, **output device**, and **master
    volume**, plus a lower-latency **MMCSS "Pro Audio"** render path. Defaults stay as today (WASAPI
    exclusive ~10 ms, 44.1 kHz); the `VP_LATENCY_MS` env var is only a temporary test hook to be replaced.
+10. **Voice leading (later):** when the joystick changes chord, pick the voicing that is the **closest
+    inversion** to the neutral/center chord — minimising how far each button's note moves. E.g. centre E
+    major `E B E G# B E G# B` → C major becomes `E C E G C E G C` (nearest inversion; notes move 0/±1).
+    Build a **dedicated class** for this (inspired by `StringExpander` / `Chord` in the ported code).
 
 ---
 
