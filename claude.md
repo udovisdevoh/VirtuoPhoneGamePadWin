@@ -5,7 +5,7 @@ This project is a Windows application (C# Console or Windows Forms) that transfo
 
 ## 2. Tech Stack & Architecture
 * **Language:** C# (.NET)
-* **UI Framework:** Windows Console or Windows Forms.
+* **UI Framework:** It is currently Windows Console but it must be converted to something with UI.
 * **Configuration:** JSON for hardware mapping and musical presets.
 * **Audio Engine:** Custom low-latency C# implementation modeled after the Android `SoundPool` API (migrated from the reference Java project).
 * **Reference Path for Audio Engine Porting:** `..\..\Java\VirtuoPhone\src\com\virtuophone`
@@ -29,6 +29,14 @@ Presets define the 3x3 musical matrices. The application relies on human-readabl
 
 ### Preset Matrix Logic & Examples
 Matrices are conceptualized as a 3x3 grid centered around the neutral joystick position, with optional outer extensions for double-tap mechanics.
+
+
+**Example 0: E pentatonic minor, stable corners, Try this one first, center E is tonic (Double-Tap Outer Bounds)**
+| B  | Bb | A  |
+| C  | E  | F  |
+| D  | F# | G  |
+
+
 
 **Example 1: Extended Layout (Double-Tap Outer Bounds)**
            | B+ |
@@ -76,8 +84,11 @@ Matrices are conceptualized as a 3x3 grid centered around the neutral joystick p
 | A  | E  | F# |
 
 
+
+
 ## 5. Development Directives for the AI
 * **Prioritize Low Latency:** When generating C# audio code, prioritize architectures that mimic Android's `SoundPool`. Focus on pre-loading buffers and ensuring real-time polyphonic playback without audio dropouts.
 * **Input State Management:** Ensure the input loop accurately distinguishes between held notes, single direction changes, and the double-tap timing window without blocking the audio thread.
 * **Relative Math for Modulation:** The transposition engine must elegantly handle interval math to accurately shift the 3x3 grid's root note when the Start button logic is triggered.
 *** This document will give Claude (or any LLM) immediate, structured context regarding your input mechanics, your specific transposition logic, and the exact path of the Java legacy code it needs to reference. Let me know if you are ready to move on to the next phase of the project!
+* Improve this documentation while working on the project
