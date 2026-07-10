@@ -9,27 +9,29 @@ using NAudio.Vorbis;
 namespace VirtuoPhone;
 
 /// <summary>
-/// Real low-latency <see cref="ISoundPool"/> built on NAudio + WASAPI (shared, event-driven).
+/// Real low-latency <see cref="ISoundPool"/> built on NAudio + WASAPI (exclusive-preferred, event-driven).
 ///
-/// Design (SoundPool-style): each <see cref="Load"/> fully decodes an <c>.ogg</c> into an in-memory
-/// mono float buffer kept at its <b>native sample rate</b>. Each <see cref="Play"/> spawns a lightweight
-/// <see cref="Voice"/> that reads that shared buffer with its own position, pitch and L/R gains. A single
-/// <see cref="Mixer"/> is pulled by the WASAPI render thread and sums all active voices.
+/// Design (SoundPool-style): each <see cref="Load"/> fully decodes an <c>.ogg</c> into an in-memory mono
+/// float buffer kept at its <b>native 44.1 kHz</b>. Each <see cref="Play"/> claims a slot in a fixed,
+/// pre-allocated <see cref="Voice"/> pool; a single <see cref="Mixer"/> is pulled by the WASAPI render
+/// thread and sums the active voices.
 ///
-/// Quality choices:
-/// * <b>One interpolation stage per voice.</b> Buffers stay at native rate; the source→output rate ratio
-///   is folded into the playback step, so a note is resampled exactly once (never twice).
-/// * <b>Cubic (Catmull-Rom) interpolation</b> at playback — much cleaner than linear for pitch-shifted notes.
-/// * <b>Headroom + transparent soft-knee.</b> A per-poly headroom gain keeps normal playing in the linear
-///   region; a soft knee only bends peaks above ~0.8, so the output never clips yet stays uncolored at
-///   normal levels.
+/// Real-time correctness (this is why low latency is glitch-free):
+/// * <b>Zero allocation on the audio thread.</b> Voices live in a fixed array iterated with a plain loop —
+///   no per-buffer enumerator/garbage — so the .NET GC never pauses us into an underrun ("pop").
+/// * <b>One interpolation stage.</b> Engine runs at 44.1 kHz (the sample rate): an unshifted note steps by
+///   exactly 1.0 → sample-accurate, no resampling; only genuine pitch shifts interpolate (cubic).
+/// * <b>Headroom + soft-knee</b> on the mix bus so stacked voices never hard-clip.
+///
+/// Concurrency: control calls (Play/Stop/SetRate/SetVolume) and the mixer share a short <see cref="gate"/>
+/// lock. Critical sections are tiny and allocation-free, so the render thread is never blocked meaningfully.
 /// </summary>
 public sealed class NAudioSoundPool : ISoundPool, IDisposable
 {
     private sealed class SoundBuffer
     {
-        public float[] Mono = Array.Empty<float>();   // decoded + downmixed to mono, native rate
-        public int SampleRate = 48000;
+        public float[] Mono = Array.Empty<float>();   // decoded, native rate (44.1 kHz)
+        public int SampleRate = 44100;
     }
 
     private sealed class Voice
@@ -41,12 +43,15 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         public float VolL = 1f;
         public float VolR = 1f;
         public bool Loop;
+        public int StreamId;           // 0 = free; identifies the voice for Stop/SetRate/SetVolume
+        public bool Active;
 
         public double Step => Pitch * RateRatio;
     }
 
     private readonly ConcurrentDictionary<int, SoundBuffer> buffers = new();
-    private readonly ConcurrentDictionary<int, Voice> voices = new();
+    private readonly Voice[] slots;                 // fixed, pre-allocated voice pool
+    private readonly object gate = new();
     private int nextSoundId;
     private int nextStreamId;
 
@@ -65,26 +70,44 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
     {
         sampleDir = Path.Combine(AppContext.BaseDirectory, "res", "raw");
         maxVoices = Math.Max(1, polyphony);
+        MasterVolume = 1f / MathF.Sqrt(Math.Min(maxVoices, 6));   // headroom for ~6 uncorrelated voices
 
-        // Headroom: keep ~6 uncorrelated voices under 0 dBFS (sqrt sum), so normal chords stay linear.
-        MasterVolume = 1f / MathF.Sqrt(Math.Min(maxVoices, 6));
+        slots = new Voice[maxVoices];
+        for (int i = 0; i < slots.Length; i++) slots[i] = new Voice();
 
-        // The whole sample bank is 44.1 kHz. Run the engine at 44.1 kHz so an unshifted note plays at a
-        // step of exactly 1.0 — bit-exact, zero rate conversion (only genuine pitch shifts interpolate).
-        // Prefer WASAPI exclusive so the OS doesn't resample either; fall back to shared if unavailable.
+        // The whole sample bank is mono 44.1 kHz. Run the engine at 44.1 kHz so an unshifted note plays at
+        // a step of exactly 1.0 — bit-exact, zero rate conversion.
         outputSampleRate = 44100;
         var mixer = new Mixer(this, WaveFormat.CreateIeeeFloatWaveFormat(outputSampleRate, OutputChannels));
 
         // Lowest output latency first: prefer exclusive (bit-exact, no OS resample/effects) with the
         // smallest buffer the device accepts, stepping up only as needed; shared is the last resort.
-        (AudioClientShareMode share, int latencyMs, string label)[] candidates =
+        (AudioClientShareMode share, int latencyMs, string label)[] candidates;
+        // Diagnostic override: set VP_LATENCY_MS to force a single buffer size (helps tell underruns from
+        // signal bugs). Otherwise probe smallest-first.
+        if (int.TryParse(Environment.GetEnvironmentVariable("VP_LATENCY_MS"), out int forcedMs) && forcedMs > 0)
         {
-            (AudioClientShareMode.Exclusive, 5,  "exclusive 5 ms (bit-exact)"),
-            (AudioClientShareMode.Exclusive, 10, "exclusive 10 ms (bit-exact)"),
-            (AudioClientShareMode.Exclusive, 20, "exclusive 20 ms (bit-exact)"),
-            (AudioClientShareMode.Shared,    10, "shared 10 ms (OS may resample)"),
-            (AudioClientShareMode.Shared,    30, "shared 30 ms (OS may resample)"),
-        };
+            candidates = new[]
+            {
+                (AudioClientShareMode.Exclusive, forcedMs, $"exclusive {forcedMs} ms (forced)"),
+                (AudioClientShareMode.Shared,    forcedMs, $"shared {forcedMs} ms (forced)"),
+            };
+        }
+        else
+        {
+            // Prefer exclusive (bit-exact, no OS resample/effects), smallest reliable buffer first.
+            // 5 ms underran on the dev machine with NAudio's default render thread (audible pops); 10 ms is
+            // glitch-free and still punchy. To go below 10 ms reliably we'd need a custom WASAPI render
+            // thread registered with MMCSS "Pro Audio". Override with VP_LATENCY_MS to experiment.
+            candidates = new[]
+            {
+                (AudioClientShareMode.Exclusive, 10, "exclusive 10 ms (bit-exact)"),
+                (AudioClientShareMode.Exclusive, 15, "exclusive 15 ms (bit-exact)"),
+                (AudioClientShareMode.Exclusive, 25, "exclusive 25 ms (bit-exact)"),
+                (AudioClientShareMode.Shared,    15, "shared 15 ms (OS may resample)"),
+                (AudioClientShareMode.Shared,    40, "shared 40 ms (OS may resample)"),
+            };
+        }
 
         IWavePlayer? chosen = null;
         string mode = "none";
@@ -137,6 +160,10 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         while ((read = reader.Read(tmp, 0, tmp.Length)) > 0)
             for (int i = 0; i < read; i++) interleaved.Add(tmp[i]);
 
+        // Samples are mono; if a stereo file ever appears, average to mono (no filtering of mono content).
+        if (channels == 1)
+            return new SoundBuffer { Mono = interleaved.ToArray(), SampleRate = sourceRate };
+
         int frames = channels > 0 ? interleaved.Count / channels : 0;
         float[] mono = new float[frames];
         for (int f = 0; f < frames; f++)
@@ -145,7 +172,6 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
             for (int c = 0; c < channels; c++) s += interleaved[f * channels + c];
             mono[f] = s / channels;
         }
-
         return new SoundBuffer { Mono = mono, SampleRate = sourceRate };
     }
 
@@ -153,38 +179,63 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
     {
         if (!buffers.TryGetValue(soundId, out var buf) || buf.Mono.Length == 0) return 0;
 
-        // Cap simultaneous voices (voice-stealing: drop the oldest) so polyphony can't run away.
-        while (voices.Count >= maxVoices)
+        lock (gate)
         {
-            int oldest = int.MaxValue;
-            foreach (int k in voices.Keys) if (k < oldest) oldest = k;
-            if (oldest == int.MaxValue || !voices.TryRemove(oldest, out _)) break;
-        }
+            // Prefer a free slot; otherwise steal the oldest active voice (smallest StreamId).
+            Voice slot = slots[0];
+            bool foundFree = false;
+            for (int i = 0; i < slots.Length; i++)
+            {
+                if (!slots[i].Active) { slot = slots[i]; foundFree = true; break; }
+            }
+            if (!foundFree)
+            {
+                for (int i = 1; i < slots.Length; i++)
+                    if (slots[i].StreamId < slot.StreamId) slot = slots[i];
+            }
 
-        int streamId = System.Threading.Interlocked.Increment(ref nextStreamId);
-        voices[streamId] = new Voice
-        {
-            Src = buf.Mono,
-            Position = 0,
-            Pitch = rate <= 0f ? 1.0 : rate,
-            RateRatio = (double)buf.SampleRate / outputSampleRate,
-            VolL = leftVolume,
-            VolR = rightVolume,
-            Loop = loop != 0,
-        };
-        return streamId;
+            int streamId = ++nextStreamId;
+            if (streamId <= 0) streamId = nextStreamId = 1;
+
+            slot.Active = false;    // pause reads while we repopulate (we hold the gate anyway)
+            slot.Src = buf.Mono;
+            slot.Position = 0;
+            slot.Pitch = rate <= 0f ? 1.0 : rate;
+            slot.RateRatio = (double)buf.SampleRate / outputSampleRate;
+            slot.VolL = leftVolume;
+            slot.VolR = rightVolume;
+            slot.Loop = loop != 0;
+            slot.StreamId = streamId;
+            slot.Active = true;
+            return streamId;
+        }
     }
 
-    public void Stop(int streamId) => voices.TryRemove(streamId, out _);
+    public void Stop(int streamId)
+    {
+        lock (gate)
+        {
+            for (int i = 0; i < slots.Length; i++)
+                if (slots[i].Active && slots[i].StreamId == streamId) { slots[i].Active = false; return; }
+        }
+    }
 
     public void SetVolume(int streamId, float left, float right)
     {
-        if (voices.TryGetValue(streamId, out var v)) { v.VolL = left; v.VolR = right; }
+        lock (gate)
+        {
+            for (int i = 0; i < slots.Length; i++)
+                if (slots[i].Active && slots[i].StreamId == streamId) { slots[i].VolL = left; slots[i].VolR = right; return; }
+        }
     }
 
     public void SetRate(int streamId, float rate)
     {
-        if (voices.TryGetValue(streamId, out var v)) v.Pitch = rate <= 0f ? 1.0 : rate;
+        lock (gate)
+        {
+            for (int i = 0; i < slots.Length; i++)
+                if (slots[i].Active && slots[i].StreamId == streamId) { slots[i].Pitch = rate <= 0f ? 1.0 : rate; return; }
+        }
     }
 
     public void Release() => Dispose();
@@ -193,7 +244,7 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
     {
         try { output.Stop(); } catch { /* ignore */ }
         output.Dispose();
-        voices.Clear();
+        lock (gate) { foreach (var v in slots) v.Active = false; }
         buffers.Clear();
     }
 
@@ -223,7 +274,7 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         return MathF.Sign(x) * (T + (1f - T) * MathF.Tanh(over));
     }
 
-    /// <summary>Master mixer pulled by the WASAPI render thread; sums every active voice.</summary>
+    /// <summary>Master mixer pulled by the WASAPI render thread; sums every active voice. No allocations.</summary>
     private sealed class Mixer : ISampleProvider
     {
         private readonly NAudioSoundPool pool;
@@ -239,35 +290,40 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         {
             Array.Clear(buffer, offset, count);
             int frames = count / OutputChannels;
+            Voice[] slots = pool.slots;
 
-            foreach (var kv in pool.voices)
+            lock (pool.gate)
             {
-                Voice v = kv.Value;
-                float[] src = v.Src;
-                int srcLen = src.Length;
-                if (srcLen == 0) { pool.voices.TryRemove(kv.Key, out _); continue; }
-
-                double pos = v.Position;
-                double step = v.Step;
-                float volL = v.VolL, volR = v.VolR;
-                int o = offset;
-                bool finished = false;
-
-                for (int f = 0; f < frames; f++)
+                for (int vi = 0; vi < slots.Length; vi++)
                 {
-                    if (pos >= srcLen)
-                    {
-                        if (v.Loop) { pos %= srcLen; }
-                        else { finished = true; break; }
-                    }
-                    float s = SampleCubic(src, srcLen, pos);
-                    buffer[o++] += s * volL;
-                    buffer[o++] += s * volR;
-                    pos += step;
-                }
+                    Voice v = slots[vi];
+                    if (!v.Active) continue;
+                    float[] src = v.Src;
+                    int srcLen = src.Length;
+                    if (srcLen == 0) { v.Active = false; continue; }
 
-                v.Position = pos;
-                if (finished) pool.voices.TryRemove(kv.Key, out _);
+                    double pos = v.Position;
+                    double step = v.Step;
+                    float volL = v.VolL, volR = v.VolR;
+                    int o = offset;
+                    bool ended = false;
+
+                    for (int f = 0; f < frames; f++)
+                    {
+                        if (pos >= srcLen)
+                        {
+                            if (v.Loop) { pos %= srcLen; }
+                            else { ended = true; break; }   // natural end (sample already faded to ~0)
+                        }
+                        float s = SampleCubic(src, srcLen, pos);
+                        buffer[o++] += s * volL;
+                        buffer[o++] += s * volR;
+                        pos += step;
+                    }
+
+                    v.Position = pos;
+                    if (ended) v.Active = false;
+                }
             }
 
             // Headroom gain, then a soft knee that only engages on peaks — clean in the normal range,

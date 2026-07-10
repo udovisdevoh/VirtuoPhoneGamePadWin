@@ -63,9 +63,15 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
   and measure end-to-end latency before adding breadth.
 - **Audio (built):** **`NAudioSoundPool`** = NAudio + NVorbis, behind **`ISoundPool`** (swappable via
   `AudioBackend`). Samples are **mono 44.1 kHz**, so the engine runs at **44.1 kHz** and prefers **WASAPI
-  exclusive** (≈5 ms, bit-exact — no OS resample or effects), falling back to shared. Unshifted notes are
-  sample-accurate; only genuine pitch shifts interpolate (**cubic / Catmull-Rom**). Mix bus = per-poly
-  headroom + a **soft-knee** limiter (no hard clipping). **Do not add resampling/filtering to the sample path.**
+  exclusive** (**~10 ms**, bit-exact — no OS resample or effects), falling back to shared. Unshifted notes
+  are sample-accurate; only genuine pitch shifts interpolate (**cubic / Catmull-Rom**). Mix bus = per-poly
+  headroom + a **soft-knee** limiter (no hard clipping). **Do not add resampling/filtering to the sample
+  path, and do not add attack/release envelopes** — they smear the pluck transient (the user rejected both).
+- **Audio real-time rules (learned the hard way):** the mixer runs on the WASAPI render thread — keep it
+  **allocation-free** (fixed voice-slot pool, no per-buffer enumerator) or the GC pauses it into underruns.
+  Low-latency "pops" were **buffer underruns**, not signal bugs: **5 ms underran** with NAudio's default
+  render thread, **10 ms is clean and punchy**. To go lower reliably, add a custom WASAPI render thread
+  registered with **MMCSS "Pro Audio"**. The `VP_LATENCY_MS` env var forces a buffer size for testing.
 - **Input:** **DirectInput/HID** (or a standard Windows joystick), behind an **`IControllerInput`** abstraction
   that treats **gamepad and keyboard uniformly**. A **remap menu** binds each musical/system action to either a
   controller button/axis *or* a keyboard key. Keep it open to other backends.
@@ -245,8 +251,8 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
 2. ✅ **Audio engine** — `NAudioSoundPool` (NAudio + NVorbis, WASAPI shared ~50 ms, polyphonic, per-voice
    pitch, tanh mix-bus limiter + voice cap) behind `ISoundPool`; swappable via `AudioBackend`.
    `DummySoundPool` kept as the headless backend.
-3. ✅ **Prove audio end-to-end** — `Program.cs` smoke test plays an arpeggio + full strum through the
-   instrument (heard, no clipping).
+3. ✅ **Prove audio end-to-end** — `Program.cs` plays a chord through the instrument: bit-exact, no
+   clipping, no pops at ~10 ms exclusive (verified by ear).
 4. ⏳ **Controller input (next):** read the Mayflash F500 (DirectInput/HID) + keyboard behind
    `IControllerInput`, map buttons→notes / joystick→chord cell, driven off the audio thread.
 5. **Preset persistence (JSON):** define the JSON schema for presets (3×3 chord layouts) and controller
@@ -258,6 +264,10 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
 7. **Interaction logic:** joystick-cell selection, held-note pitch-bend/swap, double-tap dash, Start modulation.
 8. **UI:** replace the console with a real UI showing the active cell, instrument, and note layout,
    and hosting the preset editor from step 6.
+9. **Configurable audio (eventually):** expose the engine's currently baked-in choices as user settings
+   (in the JSON config) — output **latency**, **exclusive vs shared**, **output device**, and **master
+   volume**, plus a lower-latency **MMCSS "Pro Audio"** render path. Defaults stay as today (WASAPI
+   exclusive ~10 ms, 44.1 kHz); the `VP_LATENCY_MS` env var is only a temporary test hook to be replaced.
 
 ---
 

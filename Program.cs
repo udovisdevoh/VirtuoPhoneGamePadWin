@@ -1,39 +1,35 @@
 using VirtuoPhone;
 using VirtuoPhone.Models;
 
-Console.WriteLine("VirtuoPhone — audio smoke test (SteelGuitar via NAudio/WASAPI)");
+Console.WriteLine("VirtuoPhone — pop test (within max polyphony: distinct strings, no mute, no voice-steal)");
 
 try
 {
-    // Builds the instrument -> opens WASAPI and decodes the guitar samples (see [audio] line).
     Instrument instrument = AppController.GetAppController().GetInstrument();
-    Console.WriteLine($"[test] instrument ready: strings={instrument.GetStringCount()}, autoLoop={instrument.IsAutoLoop()}");
+    int strings = instrument.GetStringCount();
+    Console.WriteLine($"[test] strings={strings} (<= polyphony), each note on its own string, ringing to natural end.");
 
-    // E major arpeggio (E2 B2 E3 G#3 B3 E4), one note per string, ~350 ms apart.
-    (int type, int octave)[] notes =
+    // E major chord: one note per DISTINCT string => at most `strings` overlapping voices, well within
+    // polyphony (stringCount*2). No same-string retrigger (no mute), no stealing. Let it ring out fully.
+    (int type, int octave)[] chord =
     {
         (Note.E, 2), (Note.B, 2), (Note.E, 3), (Note.GSharp, 3), (Note.B, 3), (Note.E, 4),
     };
 
-    var sw = System.Diagnostics.Stopwatch.StartNew();
-    for (int i = 0; i < notes.Length; i++)
+    Console.WriteLine("[test] rolling the chord once, then letting every note ring to its fade-out…");
+    for (int i = 0; i < chord.Length && i < strings; i++)
     {
-        int pitch = new Note(notes[i].type, notes[i].octave).GetPitch();
-        int stream = instrument.Play(pitch, i % instrument.GetStringCount(), 0f);
-        Console.WriteLine($"[test] +{sw.ElapsedMilliseconds,4} ms  note {i} pitch={pitch} -> stream {stream}");
-        Thread.Sleep(350);
+        int pitch = new Note(chord[i].type, chord[i].octave).GetPitch();
+        int stream = instrument.Play(pitch, i, 0f);   // string i (distinct) => no mute, no steal
+        Console.WriteLine($"[test]   string {i} pitch={pitch} -> stream {stream}");
+        Thread.Sleep(50);
     }
 
-    // Worst case for clipping: hit all six notes at once.
-    Console.WriteLine("[test] full 6-note strum (max polyphony)…");
-    for (int i = 0; i < notes.Length; i++)
-        instrument.Play(new Note(notes[i].type, notes[i].octave).GetPitch(), i, 0f);
-
-    Thread.Sleep(2500);   // let the chord ring
-    Console.WriteLine("[test] done ringing. Press Enter to exit.");
+    Thread.Sleep(9000);   // ring out to natural end (guitar samples decay over several seconds)
+    Console.WriteLine("[test] done. Press Enter to exit.");
     Console.ReadLine();
     instrument.Release();
-    Console.WriteLine("[test] released. Bye.");
+    Console.WriteLine("[test] released.");
 }
 catch (Exception ex)
 {
