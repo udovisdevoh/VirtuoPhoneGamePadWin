@@ -1,97 +1,262 @@
-# Project Context: Arcade Stick Music Synthesizer
+# Project Context: Arcade Stick Music Synthesizer (VirtuoPhone GamePad — Windows)
 
 ## 1. Project Overview
-This project is a Windows application (C# Console or Windows Forms) that transforms a video game controller—specifically optimized for arcade fight sticks like the Mayflash F500 Elite—into a polyphonic musical instrument. The software maps 8 action buttons to musical notes within a scale or chord, while the joystick dynamically controls the active chord/scale progression using a 3x3 matrix layout.
+A Windows app (C#/.NET 8) that turns a video-game controller — tuned for arcade fight sticks
+like the **Mayflash F500 Elite** — into a polyphonic musical instrument.
 
-## 2. Tech Stack & Architecture
-* **Language:** C# (.NET)
-* **UI Framework:** It is currently Windows Console but it must be converted to something with UI.
-* **Configuration:** JSON for hardware mapping and musical presets.
-* **Audio Engine:** Custom low-latency C# implementation modeled after the Android `SoundPool` API (migrated from the reference Java project).
-* **Reference Path for Audio Engine Porting:** `..\..\Java\VirtuoPhone\src\com\virtuophone`
+- **8 action buttons (right)** → play the notes of the currently selected scale/chord (8-voice polyphony).
+- **Joystick (left)** → selects the active chord/scale via a **3×3 matrix** (neutral center + 8 directions),
+  with optional outer double-tap ("dash") positions.
 
-## 3. Input Handling & Hardware Mechanics
-The input system must be highly responsive to accommodate crisp execution, rapid directional inputs, and low-latency polling.
+This is a **port of an existing Android app** (`VirtuoPhone`). The audio-output layer is being
+migrated Java → C#; the input, UI, and configuration layers are being (re)built for Windows.
 
-* **Action Buttons (Right Side):** Up to 8 buttons triggering notes of the currently selected scale/chord. Supports 8-voice polyphony.
-* **Joystick (Left Side):** Controls the tonal center and active preset via a 3x3 grid.
-    * **Neutral Position:** The main root chord or scale (e.g., E Major).
-    * **8 Directions:** Instantly shifts the active chord/scale based on the loaded preset.
-* **Dynamic Pitch-Bending / Sample Swapping:** If a button is held down while the joystick changes position, the active note will dynamically pitch-bend or swap to the corresponding sample in the new chord/scale.
-* **Directional Double-Tap ("Dash" Mechanic):** Rapidly tapping a cardinal direction twice (Up, Down, Left, Right) triggers an alternate/secondary preset tied to that extremity.
-* **System Buttons:**
-    * **Select Button:** Toggles through different loaded instruments (sample banks).
-    * **Start Button (Modulation):** * *Single Press + Direction:* Transposes the entire preset layout so that the selected direction becomes the new Neutral/Center root. Remaining positions scale relatively.
-        * *Double Press:* Forces the new Neutral position to be a Minor chord/scale. Remaining positions follow their predefined explicit values or default to Major.
+**Reference Java source (audio engine):** `..\..\Java\VirtuoPhone\src\com\virtuophone`
 
-## 4. Configuration & Presets (JSON)
-Presets define the 3x3 musical matrices. The application relies on human-readable JSON files that allow users to add, modify, and select custom layouts. The controller mapping will also be strictly defined in these files.
+---
 
-### Preset Matrix Logic & Examples
-Matrices are conceptualized as a 3x3 grid centered around the neutral joystick position, with optional outer extensions for double-tap mechanics.
+## 2. Implementation Status ⚠️ READ FIRST
+The design below is largely **intended behavior**. The current code reflects only part of it.
 
+| Area | Status | Notes |
+|------|--------|-------|
+| Audio domain model (Instrument, Chord, Note, Drone, Sample, StringExpander…) | ✅ Ported from Java | See §4–§5 |
+| 9 instruments + ~110 `.ogg` samples in `res/raw/` | ✅ Present | Banks: guitar, bagpipes, harp, harpsichord, piano, sitar(+drone/tampura), synth, violin, jew's-harp (`guimb*`) |
+| Low-latency audio engine (SoundPool-equivalent) | 🟡 **Stub only** | `Audio/DummySoundPool.cs` is a no-op placeholder — **no sound is produced yet** |
+| **Project compiles** | ❌ **No** | Missing `R` resource class (see below) |
+| Controller / gamepad input | ❌ Not started | No XInput/DirectInput, no F500 mapping |
+| UI | ❌ Not started | `Program.cs` is still the `Hello, World!` template |
+| JSON presets & remappable controls | ❌ Not started | Presets currently exist only as hard-coded text-serialized strings (§5), **not** JSON yet |
+| Modulation / double-tap / pitch-bend-on-move logic | ❌ Not started | Fully specified in §6, unimplemented |
 
-**Example 0: E pentatonic minor (EGABD), stable corners, Try this one first, center E is tonic (Double-Tap Outer Bounds)**
+### Known build blocker: undefined `R.Raw.*` resource references
+Every instrument still references Android-style resource IDs — `R.Raw.guitare2`,
+`R.Raw.bagpipesdroneloopa`, etc. In Android, `R` is an **auto-generated** class mapping
+`res/raw/<name>.ogg` files to `int` IDs. That generated class was **not** ported, so the build fails
+with `CS0103: The name 'R' does not exist`.
 
+**How sample resources are loaded in the C# port is an open design decision** — it does **not** have to
+copy the Android `R.raw` scheme, and the `res/raw/*.ogg` files are only a loose starting point that may
+be renamed, reorganized, or replaced. Two directions:
+- **Fastest unblock:** add a small `R.Raw` shim (constants matching the current call sites —
+  `guitare2`, `harpa0`, `guimb1`, …) so the existing instrument code compiles unchanged.
+- **Cleaner redesign:** drop `R.Raw.*` in favor of whatever suits the real engine — file paths, an enum,
+  a resource manager/dictionary, embedded resources — and update the instrument call sites to match.
+
+Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine must simply agree on what a
+"resource id" is (int handle, path, or key). Don't treat the current Android-style names as a constraint.
+
+---
+
+## 3. Tech Stack & Architecture
+- **Language / runtime:** C# on **.NET 8.0** (`net8.0`, `ImplicitUsings=enable`, `Nullable=enable`).
+- **Output:** Console `Exe` today; **must become a real UI** (WinForms/WPF/other — not yet decided).
+- **Configuration:** target is human-readable **JSON** for hardware mapping + musical presets (not built yet).
+- **Audio Engine:** custom low-latency C# engine modeled on Android `SoundPool` (pre-loaded buffers,
+  real-time polyphonic playback, per-stream rate/volume for pitch-shift). Currently faked by `DummySoundPool`.
+- **Namespaces:** root `VirtuoPhone` (`AppController`, `DummySoundPool`, `PointerMemory`) and
+  `VirtuoPhone.Models` (everything under `Models/`). Note: files in `Audio/` use the root `VirtuoPhone` namespace.
+
+---
+
+## 4. Codebase Map
+```
+VirtuoPhoneGamePadWin.csproj   .NET 8 console exe
+Program.cs                     Entry point — still "Hello, World!" stub (needs app wiring)
+AppController.cs               Singleton; STRING_COUNT=6; GetInstrument() hard-codes new SteelGuitar()
+Audio/
+  DummySoundPool.cs            No-op SoundPool stand-in (Load/Play/Stop/SetVolume/SetRate/Release)
+  PointerMemory.cs             Tracks active stream IDs so they can be stopped together
+Models/
+  Note.cs                      Pitch as semitone int; C..B constants; pitch = noteType + octave*12
+  Chord.cs                     Hard-coded voicings per ChordType; transpose; (de)serialize "name:typeId:noteType"
+  ChordType.cs                 enum: maj/min/7ths/9ths/sus/dim/aug/pentatonics/"ff_" full-fret sets…
+  GuitarPreset.cs              Ordered List<Chord>; indexed by Point(X=string, Y=chord); serialize by lines
+  Sample.cs                    One .ogg mapped to an original pitch; 12-TET rate = 1.0594632^(Δsemitone+bend)
+  MultiSampleSet.cs            Multiple samples for one pitch; GetRandomSample() for round-robin variation
+  StringExpander.cs            Grow/shrink a chord's note count to match instrument string count
+  Drone.cs                     Sustained bass that follows chord roots (glide, lazy-harmonic, min-pitch-shift)
+  PlayingStringMemory.cs       Per-string → stream-id map (mute previous note on same string)
+  Instruments/
+    Instrument.cs              Abstract base: preloads samples into multiSampleList[128], interpolates gaps,
+                               Play/Stop/SetStreamPitch, feature flags via abstract Build*() methods
+    Bagpipes, Harp, Harpsichord, JewsHarp, Piano, Sitar, SteelGuitar, Synth, Violin  (9 concrete instruments)
+res/raw/*.ogg                  ~110 sample files; loosely correspond to the R.Raw.* IDs (starting point,
+                               not a fixed resource layout — see §2)
+claude.original.prompt.md      Original French brief that seeded this project (design intent)
+```
+
+---
+
+## 5. Domain Model & Conventions
+Read these before touching audio code — they are the load-bearing invariants of the Java port.
+
+- **Pitch = integer semitones (MIDI-like).** `pitch = noteType + octave*12`, `noteType` 0..11 (`C`=0 … `B`=11).
+  `Note` exposes named constants (`Note.E`, `Note.FSharp`, …). Sub-zero / >127 pitches are clamped or skipped.
+- **Pitch-shifting a sample:** `rate = 1.0594632^((desiredPitch - originalPitch) + pitchBend)`
+  (12-tone equal temperament; `1.0594632 ≈ 2^(1/12)`). Playing a note = find the `MultiSampleSet` at that
+  MIDI index, pick a (random) `Sample`, play it at the computed `rate`.
+- **`Instrument` base class** (constructor does the heavy lifting):
+  - Builds a `MultiSampleSet[128]` indexed by MIDI pitch; **`InterpolateBlankSamples()`** fills empty pitches
+    from the nearest lower sample so every pitch is playable from a sparse recorded set.
+  - Polyphony = `stringCount * 2`.
+  - Behavior is declared by overriding abstract **`Build*()`** flags:
+    `BuildStringCount`, `BuildMinPitchToPlay`, `BuildIsMuteOnChangeFretSameString`, `BuildIsAutoLoop`,
+    `BuildIsAutoLoopKeepNoteUntilNewNote`, `BuildIsPitchBend`, `LoadDrone`,
+    `BuildIsLazyHarmonicDrone`, `BuildIsDroneMinimizePitchShift`, and `LoadSamples`.
+  - Loop semantics passed to `SoundPool.Play(..., loop, rate)`: `loop = -1` = infinite (auto-loop/sustained
+    instruments), `loop = 0` = one-shot.
+- **`SoundPool` API surface** to preserve when writing the real engine (mirror Android):
+  `int Load(resourceId, priority)` · `int Play(soundId, lVol, rVol, priority, loop, rate)` · `Stop(streamId)`
+  · `SetVolume(streamId, l, r)` · `SetRate(streamId, rate)` · `Release()`. IDs returned by `Play` are stream
+  handles used for later pitch-bend/stop.
+- **`Chord`** stores fixed, guitar-shaped voicings per `ChordType`, transposable via `SetFundamental()`
+  (keeps fundamental within a fixed register window), with octave de-duplication. `StringExpander`
+  then adds notes (duplicating the rarest note type, up an octave) or removes them (dropping the most
+  extreme instance of the most frequent note type) to hit the instrument's `stringCount`.
+- **`GuitarPreset`** = ordered `List<Chord>` addressed by **`Point(X = string/button, Y = chord/position)`**.
+  The mapping "joystick direction → `Y` index" is a **planned** input-layer convention, not yet coded.
+- **Serialization (current, NOT JSON):**
+  - `Chord` → `"<name>:<chordTypeId>:<noteType>"`
+  - `GuitarPreset` → first line = name, then one serialized chord per line (`\r`/`\n` separated).
+  - The move to JSON presets/config (§7) is still to do; keep round-tripping compatible or write a converter.
+
+---
+
+## 6. Input Handling & Hardware Mechanics (target design — not yet implemented)
+Must be highly responsive: crisp execution, rapid directional inputs, low-latency polling, and it must
+**never block the audio thread**.
+
+- **Action Buttons (right, up to 8):** trigger notes of the active scale/chord; 8-voice polyphony.
+- **Joystick (left):** selects tonal center / active preset cell via a 3×3 grid.
+  - **Neutral:** the root chord/scale (e.g. E).
+  - **8 directions:** instantly shift the active chord/scale per the loaded preset.
+- **Dynamic pitch-bend / sample-swap:** if a button is **held** while the joystick moves, the sounding note
+  pitch-bends or swaps to the corresponding sample in the new chord/scale (see `Instrument.SetStreamPitch`,
+  `IsPitchBend`).
+- **Directional double-tap ("dash"):** quickly tapping a cardinal direction twice triggers an alternate
+  preset tied to that extremity (the outer cells in the extended matrices).
+- **System buttons:**
+  - **Select:** cycle loaded instruments (sample banks).
+  - **Start (modulation):**
+    - *Single + direction:* transpose the whole layout so that direction becomes the new neutral/center root;
+      other cells scale relatively (interval math on the 3×3 grid).
+    - *Double press:* force the new neutral cell to be **minor**; other cells keep their explicit preset value
+      or default to major.
+- **Remappable controls:** every action should be rebindable per controller via the JSON config.
+
+---
+
+## 7. Configuration & Presets
+Presets define the 3×3 musical matrices (with optional outer cells for double-tap). The user must be able
+to **create, edit, save, load, and select** presets (chord layouts + their per-cell chords) at runtime,
+plus a strictly-defined, remappable controller map. Target format is **human-readable JSON**.
+*(Today only the text serialization in §5 exists; JSON load/save and the editor are unbuilt — see §8 steps 5–6.)*
+
+Matrices are a 3×3 grid centered on the neutral joystick position, with optional outer extensions.
+
+**Example 0 — E pentatonic minor (EGABD), stable corners, center E is tonic (try this first; outer = double-tap):**
+```
            |Cdim7|
       | B  |  Bb | A  |
 |Bdim7| C  |  E  | F  |C#dim7|
       | D  |  F# | G  |
            |Bdim7|
+```
 
-
-
-**Example 1: Extended Layout (Double-Tap Outer Bounds)**
+**Example 1 — Extended layout (double-tap outer bounds):**
+```
            | B+ |
        | D | F# | G |
 |F#dim7| F | E  | B |C#dim7|
        | C | Bb | A |
            | E+ |
+```
+*(Center E; diagonals F#, G, A, Bb; outer edges require double-tap.)*
 
-*(Center: E, Diagonals: F#, G, A, Bb. Outer edges require double-tap inputs).*
-
-**Example 2: Chromatic Spiral**
+**Example 2 — Chromatic Spiral**
+```
 | C  | D  | F  |
 | B  | E  | F# |
 | Bb | A  | G  |
+```
 
-
-**Example 3: Chromatic Spiral (Circle of 5ths)**
+**Example 3 — Chromatic Spiral (Circle of 5ths)**
+```
 | F# | B  | A  |
 | Bb | E  | D  |
 | F  | C  | G  |
+```
 
-
-**Example 4: Minor Blues Rotation (Tensions on sides, Stable on diagonals)**
+**Example 4 — Minor Blues Rotation (tensions on sides, stable on diagonals)**
+```
 | B  | C  | D  |
 | Bb | E  | F# |
 | A  | F  | G  |
+```
 
-
-**Example 5: Minor Blues Rotation (Tensions on diagonals, Stable on sides)**
+**Example 5 — Minor Blues Rotation (tensions on diagonals, stable on sides)**
+```
 | C  | D  | F# |
 | B  | E  | G  |
 | Bb | A  | F  |
-(Underlying set: F# B E A D G C F Bb)
+```
+*(Underlying set: F# B E A D G C F Bb)*
 
-
-**Example 6: Pure Circle of 4ths Rotation**
+**Example 6 — Pure Circle of 4ths Rotation**
+```
 | C  | G  | D  |
 | F  | E  | A  |
 | Bb | Eb | Ab |
+```
 
-
-**Example 7: Center dim7 (Most unstable center, stable corners)**
+**Example 7 — Center dim7 (most unstable center, stable corners)**
+```
 | C  | Bb | D# |
 | G  | Bo | C# |
 | A  | E  | F# |
+```
 
+---
 
+## 8. Roadmap / TODO (suggested order)
+1. **Unblock the build:** resolve the undefined `R.Raw.*` references (§2) — either a quick `R.Raw` shim
+   or a redesigned resource-loading scheme. The sample-resource design is open; the repo's current names
+   are not binding.
+2. **Real audio engine:** replace `DummySoundPool` with a low-latency C# implementation (candidates:
+   NAudio / CSCore / miniaudio bindings) preserving the API in §5 and streaming `res/raw/*.ogg`.
+3. **Wire `Program.cs`:** instantiate `AppController` / an instrument and prove one note plays end-to-end.
+4. **Controller input:** poll the Mayflash F500 (XInput/DirectInput), map buttons/joystick, drive polyphony
+   off the audio thread.
+5. **Preset persistence (JSON):** define the JSON schema for presets (3×3 chord layouts) and controller
+   maps; implement load and save; migrate the §5 text serialization (or ship a converter).
+6. **Preset editing:** let the user build and modify chord layouts — set each joystick cell's chord
+   (root + `ChordType`), and rename / add / remove / duplicate / select presets — then save and reload them.
+   The model already has the primitives (`GuitarPreset.SetChord/ReplaceChord/RemoveChord/Add/RegenerateChords`,
+   `Chord.SetFundamental`); this adds the authoring workflow (its editor UI lands with the UI work below).
+7. **Interaction logic:** joystick-cell selection, held-note pitch-bend/swap, double-tap dash, Start modulation.
+8. **UI:** replace the console with a real UI showing the active cell, instrument, and note layout,
+   and hosting the preset editor from step 6.
 
+---
 
-## 5. Development Directives for the AI
-* **Prioritize Low Latency:** When generating C# audio code, prioritize architectures that mimic Android's `SoundPool`. Focus on pre-loading buffers and ensuring real-time polyphonic playback without audio dropouts.
-* **Input State Management:** Ensure the input loop accurately distinguishes between held notes, single direction changes, and the double-tap timing window without blocking the audio thread.
-* **Relative Math for Modulation:** The transposition engine must elegantly handle interval math to accurately shift the 3x3 grid's root note when the Start button logic is triggered.
-*** This document will give Claude (or any LLM) immediate, structured context regarding your input mechanics, your specific transposition logic, and the exact path of the Java legacy code it needs to reference. Let me know if you are ready to move on to the next phase of the project!
-* Improve this documentation while working on the project
+## 9. Build & Run
+```powershell
+dotnet build      # currently FAILS until the R class exists (see §2)
+dotnet run        # runs Program.cs (Hello World stub today)
+```
+Restore/build target framework is `net8.0`. When adding audio/input NuGet packages, add them to
+`VirtuoPhoneGamePadWin.csproj`.
+
+---
+
+## 10. Development Directives for the AI
+- **Prioritize low latency:** mirror Android `SoundPool` — pre-load buffers, real-time polyphony, no dropouts.
+  Keep the API surface in §5 so the ported model classes don't need rewriting.
+- **Never block the audio thread:** input polling, double-tap timing windows, and UI updates run off it.
+- **Relative interval math for modulation:** the transposition engine must shift the 3×3 grid's root cleanly
+  (see `Chord.SetFundamental`, `Drone.GetClosestHarmonizedPitchToOriginalSample`).
+- **Respect the Java port:** these classes are a faithful migration. Prefer small, idiomatic C# adjustments
+  over redesigns unless asked; when you do refactor, preserve serialization compatibility.
+- **Keep this file current:** update the §2 status table and §8 roadmap as things get implemented — it is the
+  fast-start context for any future session.
