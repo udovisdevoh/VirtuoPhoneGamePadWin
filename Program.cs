@@ -35,6 +35,9 @@ var grid = new Dictionary<Direction, Chord>
 Direction dir = Direction.Neutral;
 Chord current = grid[dir];
 int lastMask = 0;
+int liveButtons = Math.Min(strings, input.NoteButtonCount);
+int[] playingPitch = new int[liveButtons];   // last pitch each button is sounding (for held-note swap)
+Array.Fill(playingPitch, int.MinValue);
 
 int seconds = int.TryParse(Environment.GetEnvironmentVariable("VP_PLAY_SECONDS"), out int sec) && sec > 0 ? sec : 120;
 Console.Write($"[play] neutral chord: {current} — notes:");
@@ -49,22 +52,38 @@ while (sw.Elapsed.TotalSeconds < seconds)
     InputSnapshot snap = input.Poll();
     if (snap.Home) break;
 
+    // Joystick changed the chord while playing: immediately swap the note of every HELD button whose note
+    // differs in the new chord — no re-press needed. Buttons whose note is unchanged keep ringing.
     if (snap.Dir != dir)
     {
         dir = snap.Dir;
         current = grid[dir];
         Console.WriteLine($"[play] chord -> {current}  ({dir})");
+
+        int sustained = lastMask & snap.NotesMask;
+        for (int i = 0; i < liveButtons; i++)
+            if ((sustained & (1 << i)) != 0)
+            {
+                int newPitch = current[i].GetPitch();
+                if (newPitch != playingPitch[i])
+                {
+                    instrument.Play(current[i], i, 0f);   // same-string mute steals the old voice
+                    playingPitch[i] = newPitch;
+                }
+            }
     }
 
-    int rising = snap.NotesMask & ~lastMask;   // play on press (pluck); holding rings out
-    for (int i = 0; i < strings && i < input.NoteButtonCount; i++)
+    // Newly pressed buttons: pluck the current chord's note.
+    int rising = snap.NotesMask & ~lastMask;
+    for (int i = 0; i < liveButtons; i++)
         if ((rising & (1 << i)) != 0)
         {
             instrument.Play(current[i], i, 0f);
+            playingPitch[i] = current[i].GetPitch();
             Console.WriteLine($"[play]   note {i}: {current[i].GetName()}");
         }
-    lastMask = snap.NotesMask;
 
+    lastMask = snap.NotesMask;
     Thread.Sleep(2);   // ~500 Hz input poll
 }
 
