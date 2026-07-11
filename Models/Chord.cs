@@ -367,6 +367,162 @@ public class Chord : IEnumerable<Note>
                 noteList.Add(new Note(Note.G, 3));
                 noteList.Add(new Note(Note.A, 3));
                 break;
+
+            // --- Altered suspended chords (root, colour tone, 5th; voiced over two octaves) ---
+            case ChordType.sus4sharp:   // root, #4, 5
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.FSharp, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.C, 4));
+                noteList.Add(new Note(Note.FSharp, 4));
+                noteList.Add(new Note(Note.G, 4));
+                break;
+            case ChordType.sus2flat:    // root, b2, 5
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.CSharp, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.C, 4));
+                noteList.Add(new Note(Note.CSharp, 4));
+                noteList.Add(new Note(Note.G, 4));
+                break;
+
+            // --- Scales / modes: the 7 degrees ascending from the root (StringExpander pads to 8; the play
+            //     harness voice-leads the pitch classes). Written in C; SetFundamental transposes to the root. ---
+            case ChordType.ionian:               // 0 2 4 5 7 9 11
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.D, 3));
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.F, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.A, 3));
+                noteList.Add(new Note(Note.B, 3));
+                break;
+            case ChordType.dorian:               // 0 2 3 5 7 9 10
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.D, 3));
+                noteList.Add(new Note(Note.DSharp, 3));
+                noteList.Add(new Note(Note.F, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.A, 3));
+                noteList.Add(new Note(Note.ASharp, 3));
+                break;
+            case ChordType.phrygian:             // 0 1 3 5 7 8 10
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.CSharp, 3));
+                noteList.Add(new Note(Note.DSharp, 3));
+                noteList.Add(new Note(Note.F, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.GSharp, 3));
+                noteList.Add(new Note(Note.ASharp, 3));
+                break;
+            case ChordType.lydian:               // 0 2 4 6 7 9 11
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.D, 3));
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.FSharp, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.A, 3));
+                noteList.Add(new Note(Note.B, 3));
+                break;
+            case ChordType.mixolydian:           // 0 2 4 5 7 9 10
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.D, 3));
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.F, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.A, 3));
+                noteList.Add(new Note(Note.ASharp, 3));
+                break;
+            case ChordType.aeolian:              // 0 2 3 5 7 8 10
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.D, 3));
+                noteList.Add(new Note(Note.DSharp, 3));
+                noteList.Add(new Note(Note.F, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.GSharp, 3));
+                noteList.Add(new Note(Note.ASharp, 3));
+                break;
+            case ChordType.locrian:              // 0 1 3 5 6 8 10
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.CSharp, 3));
+                noteList.Add(new Note(Note.DSharp, 3));
+                noteList.Add(new Note(Note.F, 3));
+                noteList.Add(new Note(Note.FSharp, 3));
+                noteList.Add(new Note(Note.GSharp, 3));
+                noteList.Add(new Note(Note.ASharp, 3));
+                break;
+            case ChordType.harmonic_minor:       // 0 2 3 5 7 8 11
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.D, 3));
+                noteList.Add(new Note(Note.DSharp, 3));
+                noteList.Add(new Note(Note.F, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.GSharp, 3));
+                noteList.Add(new Note(Note.B, 3));
+                break;
+            case ChordType.phrygian_dominant:    // 0 1 4 5 7 8 10
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.CSharp, 3));
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.F, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.GSharp, 3));
+                noteList.Add(new Note(Note.ASharp, 3));
+                break;
+            case ChordType.melodic_minor:        // 0 2 3 5 7 9 11
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.D, 3));
+                noteList.Add(new Note(Note.DSharp, 3));
+                noteList.Add(new Note(Note.F, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.A, 3));
+                noteList.Add(new Note(Note.B, 3));
+                break;
+            case ChordType.mixolydian_b6:        // 0 2 4 5 7 8 10
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.D, 3));
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.F, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.GSharp, 3));
+                noteList.Add(new Note(Note.ASharp, 3));
+                break;
+            case ChordType.lydian_dominant:      // 0 2 4 6 7 9 10
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.D, 3));
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.FSharp, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.A, 3));
+                noteList.Add(new Note(Note.ASharp, 3));
+                break;
+            case ChordType.double_harmonic_major:
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.CSharp, 3));
+                noteList.Add(new Note(Note.E, 3));
+                noteList.Add(new Note(Note.F, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.GSharp, 3));
+                noteList.Add(new Note(Note.B, 3));
+                break;
+            case ChordType.double_harmonic_minor:
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.D, 3));
+                noteList.Add(new Note(Note.DSharp, 3));
+                noteList.Add(new Note(Note.FSharp, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.GSharp, 3));
+                noteList.Add(new Note(Note.B, 3));
+                break;
+            case ChordType.dorian_sharp_4:       // 0 2 3 6 7 9 10 (Ukrainian Dorian)
+                noteList.Add(new Note(Note.C, 3));
+                noteList.Add(new Note(Note.D, 3));
+                noteList.Add(new Note(Note.DSharp, 3));
+                noteList.Add(new Note(Note.FSharp, 3));
+                noteList.Add(new Note(Note.G, 3));
+                noteList.Add(new Note(Note.A, 3));
+                noteList.Add(new Note(Note.ASharp, 3));
+                break;
             default:
                 break;
         }
@@ -618,6 +774,40 @@ public class Chord : IEnumerable<Note>
                 return 37;
             case ChordType.pentatonic_scottish:
                 return 38;
+            case ChordType.sus4sharp:
+                return 39;
+            case ChordType.sus2flat:
+                return 40;
+            case ChordType.ionian:
+                return 41;
+            case ChordType.dorian:
+                return 42;
+            case ChordType.phrygian:
+                return 43;
+            case ChordType.lydian:
+                return 44;
+            case ChordType.mixolydian:
+                return 45;
+            case ChordType.aeolian:
+                return 46;
+            case ChordType.locrian:
+                return 47;
+            case ChordType.harmonic_minor:
+                return 48;
+            case ChordType.phrygian_dominant:
+                return 49;
+            case ChordType.melodic_minor:
+                return 50;
+            case ChordType.mixolydian_b6:
+                return 51;
+            case ChordType.lydian_dominant:
+                return 52;
+            case ChordType.double_harmonic_major:
+                return 53;
+            case ChordType.double_harmonic_minor:
+                return 54;
+            case ChordType.dorian_sharp_4:
+                return 55;
             default:
                 return -1;
         }
@@ -705,6 +895,40 @@ public class Chord : IEnumerable<Note>
                 return ChordType.pentatonic_suspended;
             case 38:
                 return ChordType.pentatonic_scottish;
+            case 39:
+                return ChordType.sus4sharp;
+            case 40:
+                return ChordType.sus2flat;
+            case 41:
+                return ChordType.ionian;
+            case 42:
+                return ChordType.dorian;
+            case 43:
+                return ChordType.phrygian;
+            case 44:
+                return ChordType.lydian;
+            case 45:
+                return ChordType.mixolydian;
+            case 46:
+                return ChordType.aeolian;
+            case 47:
+                return ChordType.locrian;
+            case 48:
+                return ChordType.harmonic_minor;
+            case 49:
+                return ChordType.phrygian_dominant;
+            case 50:
+                return ChordType.melodic_minor;
+            case 51:
+                return ChordType.mixolydian_b6;
+            case 52:
+                return ChordType.lydian_dominant;
+            case 53:
+                return ChordType.double_harmonic_major;
+            case 54:
+                return ChordType.double_harmonic_minor;
+            case 55:
+                return ChordType.dorian_sharp_4;
             default:
                 return ChordType.maj;
         }

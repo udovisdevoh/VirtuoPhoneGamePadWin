@@ -23,7 +23,6 @@ public enum ChordType
     pentatonic_minor_flat5,
     pentatonic_suspended,
     pentatonic_scottish,
-#warning ajouter ces types d'accord / gamme
     sus4sharp,
     sus2flat,
     ionian,
@@ -38,7 +37,7 @@ public enum ChordType
     melodic_minor,
     mixolydian_b6,
     lydian_dominant,
-    double_harmonic,
     double_harmonic_major,
+    double_harmonic_minor,
     dorian_sharp_4
 }
