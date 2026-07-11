@@ -33,8 +33,12 @@ public interface ISoundPool
     /// <summary>Update a playing voice's left/right gains.</summary>
     void SetVolume(int streamId, float left, float right);
 
-    /// <summary>Update a playing voice's playback rate (pitch).</summary>
+    /// <summary>Update a playing voice's playback rate (pitch), instantly.</summary>
     void SetRate(int streamId, float rate);
+
+    /// <summary>Smoothly multiply a playing voice's rate by <paramref name="rateFactor"/> over
+    /// <paramref name="glideSeconds"/> (0 = instant) — a portamento/glissando on the existing voice.</summary>
+    void GlideRate(int streamId, float rateFactor, float glideSeconds);
 
     /// <summary>Release the engine and all resources.</summary>
     void Release();

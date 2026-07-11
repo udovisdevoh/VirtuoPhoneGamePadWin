@@ -40,6 +40,8 @@ public abstract class Instrument : IEnumerable<Sample>
 
     private bool isMonophonic;
 
+    private float glissandoSeconds;
+
     public Instrument()
     {
         random = new Random();
@@ -51,6 +53,7 @@ public abstract class Instrument : IEnumerable<Sample>
         attackSeconds = BuildAttackSeconds();
         releaseSeconds = BuildReleaseSeconds();
         isMonophonic = BuildIsMonophonic();
+        glissandoSeconds = BuildGlissandoSeconds();
         polyphony = stringCount * 2;
         soundPool = AudioBackend.Create(polyphony);
         //streamIdByStringBeingPlayed = new int[AppController.STRING_COUNT];
@@ -97,6 +100,10 @@ public abstract class Instrument : IEnumerable<Sample>
     // A fixed drone ignores joystick chord changes and holds its own note (like real bagpipes); it only
     // moves when the layout is modulated. Default: the drone follows the chord (e.g. the sitar tampura).
     protected virtual bool BuildIsDroneFixed() => false;
+
+    // Glissando time (seconds) for chord changes while a note is held: the held voice glides (portamento)
+    // to the new note instead of re-attacking. 0 = disabled (re-attack). Only the bowed violin uses this.
+    protected virtual float BuildGlissandoSeconds() => 0f;
 
     protected abstract bool BuildIsDroneMinimizePitchShift();
 
@@ -269,6 +276,16 @@ public abstract class Instrument : IEnumerable<Sample>
     public float GetReleaseSeconds() => releaseSeconds;
 
     public bool IsMonophonic() => isMonophonic;
+
+    public float GetGlissandoSeconds() => glissandoSeconds;
+
+    /// <summary>Glissando a held voice from one pitch to another (portamento) instead of re-attacking.</summary>
+    public void GlidePitch(int streamId, int fromPitch, int toPitch, float glideSeconds)
+    {
+        if (streamId <= 0) return;
+        float factor = (float)Math.Pow(2.0, (toPitch - fromPitch) / 12.0);
+        soundPool.GlideRate(streamId, factor, glideSeconds);
+    }
 
     public bool IsAutoLoop()
     {

@@ -154,6 +154,7 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
         // Held-note swap on chord change: re-voice every still-held, still-sounding button whose note changed.
         if (chordChanged)
         {
+            float gliss = instrument.GetGlissandoSeconds();
             int sustained = lastMask & snap.NotesMask;
             for (int i = 0; i < liveButtons; i++)
                 if ((sustained & (1 << i)) != 0 && streamId[i] != 0)
@@ -161,7 +162,10 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
                     int newPitch = current.Voicing[i];
                     if (newPitch != playingPitch[i])
                     {
-                        streamId[i] = instrument.Play(newPitch, i, 0f);   // same-string mute steals the old voice
+                        if (gliss > 0f)
+                            instrument.GlidePitch(streamId[i], playingPitch[i], newPitch, gliss);   // portamento
+                        else
+                            streamId[i] = instrument.Play(newPitch, i, 0f);   // re-attack (same-string mute steals old)
                         playingPitch[i] = newPitch;
                     }
                 }

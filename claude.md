@@ -196,6 +196,9 @@ How held buttons + joystick chord changes map onto engine voices:
 - **Optional per-voice envelope.** ✅ `Instrument.BuildAttackSeconds()`/`BuildReleaseSeconds()` (default 0 =
   hard edge) drive a per-voice attack/release fade in `NAudioSoundPool`. Only the **violin** sets them > 0.
   This is **opt-in per instrument** — do not apply an envelope globally (an always-on envelope was rejected).
+- **Optional glissando (portamento).** ✅ `Instrument.BuildGlissandoSeconds()` (default 0 = re-attack) makes
+  a **held** voice **glide** to the new note on a chord change instead of re-triggering — `Instrument.GlidePitch`
+  → `NAudioSoundPool.GlideRate` slews the voice's rate over that time. Only the **violin** sets it > 0.
 - **Drone instruments.** ✅ **sitar** (C# tampura) and **bagpipes** (A) add a sustained root that tracks the
   chord (the `Drone` class via `LoadDrone`/`setDrone`; lazy-harmonic + a `pitchAdjustSpeedMultiplicator`
   glide — bagpipes uses a small **1.02** so its small per-chord steps glide instead of snapping). Harp,

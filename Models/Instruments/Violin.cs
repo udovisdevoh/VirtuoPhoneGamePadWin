@@ -82,4 +82,10 @@ public class Violin : Instrument
     {
         return 0.08f;
     }
+
+    // Bowed string: glide (portamento) to the new note on chord changes instead of re-attacking.
+    protected override float BuildGlissandoSeconds()
+    {
+        return 0.12f;
+    }
 }

@@ -38,8 +38,10 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
     {
         public float[] Src = Array.Empty<float>();
         public double Position;        // in source samples
-        public double Pitch = 1.0;     // semitone rate multiplier from the caller
-        public double RateRatio = 1.0; // sourceRate / outputRate (folded resampling)
+        public double Pitch = 1.0;         // semitone rate multiplier from the caller
+        public double TargetPitch = 1.0;   // glissando target
+        public double PitchGlideInc;       // per-sample glide toward TargetPitch (0 = no glide)
+        public double RateRatio = 1.0;     // sourceRate / outputRate (folded resampling)
         public float VolL = 1f;
         public float VolR = 1f;
         public bool Loop;
@@ -209,6 +211,8 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
             slot.Src = buf.Mono;
             slot.Position = 0;
             slot.Pitch = rate <= 0f ? 1.0 : rate;
+            slot.TargetPitch = slot.Pitch;
+            slot.PitchGlideInc = 0;
             slot.RateRatio = (double)buf.SampleRate / outputSampleRate;
             slot.VolL = leftVolume;
             slot.VolR = rightVolume;
@@ -246,7 +250,30 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         lock (gate)
         {
             for (int i = 0; i < slots.Length; i++)
-                if (slots[i].Active && slots[i].StreamId == streamId) { slots[i].Pitch = rate <= 0f ? 1.0 : rate; return; }
+                if (slots[i].Active && slots[i].StreamId == streamId)
+                {
+                    slots[i].Pitch = rate <= 0f ? 1.0 : rate;
+                    slots[i].TargetPitch = slots[i].Pitch;
+                    slots[i].PitchGlideInc = 0;
+                    return;
+                }
+        }
+    }
+
+    // Portamento: glide the voice's rate by rateFactor over glideSeconds (0 = instant). See the mixer.
+    public void GlideRate(int streamId, float rateFactor, float glideSeconds)
+    {
+        lock (gate)
+        {
+            for (int i = 0; i < slots.Length; i++)
+                if (slots[i].Active && slots[i].StreamId == streamId)
+                {
+                    double target = slots[i].Pitch * rateFactor;
+                    if (glideSeconds <= 0f) { slots[i].Pitch = target; slots[i].PitchGlideInc = 0; }
+                    else slots[i].PitchGlideInc = (target - slots[i].Pitch) / (glideSeconds * outputSampleRate);
+                    slots[i].TargetPitch = target;
+                    return;
+                }
         }
     }
 
@@ -339,7 +366,10 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
                     if (srcLen == 0) { v.Active = false; continue; }
 
                     double pos = v.Position;
-                    double step = v.Step;
+                    double pitch = v.Pitch;
+                    double targetPitch = v.TargetPitch;
+                    double pitchGlideInc = v.PitchGlideInc;
+                    double rateRatio = v.RateRatio;
                     float volL = v.VolL, volR = v.VolR;
                     float gain = v.Gain;
                     float attackInc = v.AttackInc, releaseInc = v.ReleaseInc;
@@ -353,6 +383,18 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
                         {
                             if (v.Loop) { pos %= srcLen; }
                             else { ended = true; break; }   // natural end (sample already faded to ~0)
+                        }
+
+                        // Portamento: glide the pitch toward its target (0 = no glide).
+                        if (pitchGlideInc != 0.0)
+                        {
+                            pitch += pitchGlideInc;
+                            if ((pitchGlideInc > 0.0 && pitch >= targetPitch) ||
+                                (pitchGlideInc < 0.0 && pitch <= targetPitch))
+                            {
+                                pitch = targetPitch;
+                                pitchGlideInc = 0.0;
+                            }
                         }
 
                         // Optional envelope: fade out while releasing (instant when no release is set),
@@ -372,10 +414,12 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
                         float s = SampleCubic(src, srcLen, pos) * gain;
                         buffer[o++] += s * volL;
                         buffer[o++] += s * volR;
-                        pos += step;
+                        pos += pitch * rateRatio;
                     }
 
                     v.Position = pos;
+                    v.Pitch = pitch;
+                    v.PitchGlideInc = pitchGlideInc;
                     v.Gain = gain;
                     if (ended) v.Active = false;
                 }
