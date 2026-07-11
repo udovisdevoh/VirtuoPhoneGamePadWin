@@ -1,9 +1,59 @@
 using System.Linq;
+using NAudio.Wave;
 using VirtuoPhone;
 using VirtuoPhone.Models;
 using VirtuoPhone.Input;
 
 Console.WriteLine("VirtuoPhone — play with the Mayflash F500 (buttons = notes, stick = chord).");
+
+// Diagnostic mode (VP_DIAG=1): inspect the raw guitar low-E sample and play isolated notes — no polyphony,
+// no chords, no glissando. Compare audio modes to isolate crackle: default (shared 48 kHz, resampled) vs
+// VP_AUDIO_MODE=exclusive (44.1 kHz, bit-exact, no resample).
+string? diagMode = Environment.GetEnvironmentVariable("VP_DIAG");   // "raw" / "engine" for audio debugging
+if (diagMode != null)
+{
+    string oggPath = System.IO.Path.Combine(AppContext.BaseDirectory, "res", "raw", "guitare2.ogg");
+    using (var reader = new NAudio.Vorbis.VorbisWaveReader(oggPath))
+    {
+        var samples = new List<float>();
+        float[] buf = new float[reader.WaveFormat.SampleRate * reader.WaveFormat.Channels];
+        int got;
+        while ((got = reader.Read(buf, 0, buf.Length)) > 0)
+            for (int k = 0; k < got; k++) samples.Add(buf[k]);
+        float peak = 0f;
+        foreach (float s in samples) peak = Math.Max(peak, Math.Abs(s));
+        Console.WriteLine($"[diag] guitare2.ogg: {reader.WaveFormat.SampleRate} Hz, {reader.WaveFormat.Channels} ch, " +
+                          $"{samples.Count} samples, peak abs = {peak:0.000}");
+    }
+
+    if (diagMode == "raw")
+    {
+        // Play guitare2.ogg straight through NAudio — engine fully bypassed — at a matched level & big buffer.
+        using var reader = new NAudio.Vorbis.VorbisWaveReader(oggPath);
+        var stereo = new NAudio.Wave.SampleProviders.MonoToStereoSampleProvider(reader);
+        var quiet = new NAudio.Wave.SampleProviders.VolumeSampleProvider(stereo) { Volume = 0.41f };
+        int rawLatency = int.TryParse(Environment.GetEnvironmentVariable("VP_LATENCY_MS"), out int rl) && rl > 0 ? rl : 100;
+        using var wo = new NAudio.Wave.WasapiOut(NAudio.CoreAudioApi.AudioClientShareMode.Shared, true, rawLatency);
+        wo.Init(quiet);
+        Console.WriteLine($"[diag] RAW playback of guitare2.ogg via NAudio (engine bypassed, {rawLatency} ms buffer)…");
+        wo.Play();
+        Thread.Sleep((int)reader.TotalTime.TotalMilliseconds + 700);
+    }
+    else
+    {
+        Instrument diag = AppController.GetAppController().GetInstrument();   // SteelGuitar
+        Console.WriteLine("[diag] ENGINE playback of isolated notes (listen for crackle, esp. the low E)…");
+        foreach (int p in new[] { 28, 33, 40, 52 })   // E2 (low), A2, E3, E4
+        {
+            Console.WriteLine($"[diag]   {new Note(p).GetName()} (pitch {p})");
+            diag.Play(p, 0, 0f);
+            Thread.Sleep(2500);
+        }
+        Thread.Sleep(500);
+        diag.Release();
+    }
+    return;
+}
 
 int deviceId = WinmmControllerInput.FindFirstConnected();
 if (deviceId < 0)

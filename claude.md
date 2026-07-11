@@ -22,10 +22,10 @@ The design below is largely **intended behavior**. The current code reflects onl
 |------|--------|-------|
 | Audio domain model (Instrument, Chord, Note, Drone, Sample, StringExpander…) | ✅ Ported from Java | See §4–§5 |
 | 9 instruments + ~110 `.ogg` samples in `res/raw/` | ✅ Present | Banks: guitar, bagpipes, harp, harpsichord, piano, sitar(+drone/tampura), synth, violin, jew's-harp (`guimb*`) |
-| Low-latency audio engine (SoundPool-equivalent) | ✅ **Working (first cut)** | `Audio/NAudioSoundPool.cs` — WASAPI shared (~50 ms), polyphonic, per-voice pitch; behind an `ISoundPool` seam. `DummySoundPool` kept as a silent/headless backend |
-| **Project compiles & plays audio** | ✅ **Yes** | `R` class generated; NAudio + NAudio.Vorbis added; smoke test plays a polyphonic arpeggio (verified) |
-| Controller / gamepad input | ❌ Not started | No XInput/DirectInput, no F500 mapping |
-| UI | ❌ Not started | `Program.cs` is still the `Hello, World!` template |
+| Low-latency audio engine (SoundPool-equivalent) | ✅ **Working** | `Audio/NAudioSoundPool.cs` — NAudio `MixingSampleProvider` + WASAPI shared (~10 ms), polyphonic, per-voice pitch/envelope/glissando; behind an `ISoundPool` seam. `DummySoundPool` kept as a silent/headless backend |
+| **Project compiles & plays audio** | ✅ **Yes** | `R` class generated; NAudio + NAudio.Vorbis added; plays clean polyphony — no pops or crackle (verified by ear) |
+| Controller / gamepad input | ✅ **Working (F500)** | `Input/WinmmControllerInput.cs` (winmm `joyGetPosEx`) behind `IControllerInput`; F500 buttons→notes, stick→chord cell. Keyboard backend + remap menu still TODO |
+| UI | ◐ Console play harness | `Program.cs` drives live play (joystick=chord, buttons=notes, Select=instrument); no graphical UI yet |
 | JSON presets & remappable controls | ❌ Not started | Presets currently exist only as hard-coded text-serialized strings (§5), **not** JSON yet |
 | Modulation / double-tap / pitch-bend-on-move logic | ❌ Not started | Fully specified in §6, unimplemented |
 
@@ -62,22 +62,30 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
 - **Approach:** build a **vertical slice first** — one instrument + one hard-coded preset + the real F500 → sound —
   and measure end-to-end latency before adding breadth.
 - **Audio (built):** **`NAudioSoundPool`** = NAudio + NVorbis, behind **`ISoundPool`** (swappable via
-  `AudioBackend`). Source samples are **mono 44.1 kHz**. The engine runs at the **output/device rate** and
-  each sample is **resampled once, in RAM, at load** (cubic) to that rate — so the **playback path never
-  resamples** (only genuine pitch shifts interpolate, **cubic / Catmull-Rom**) and, in shared mode, the OS
-  doesn't resample the mix every buffer. An unshifted note then plays at step 1.0.
+  `AudioBackend`). **Mixing + output are NAudio's own `MixingSampleProvider` + `WasapiOut`** — we do **not**
+  hand-roll the mixer (see the lesson below). Each playing note is a **`VoiceSampleProvider`** (an
+  `ISampleProvider` that reads its cached mono sample at a variable rate — pitch via **cubic/Catmull-Rom**
+  interpolation, optional envelope, glissando) added as a mixer input; it returns 0 at end-of-stream so the
+  mixer drops it. A **`VolumeSampleProvider`** master applies per-poly headroom.
+  Source samples are **mono 44.1 kHz**; each is **resampled once, in RAM, at load** (cubic) to the
+  output/device rate — so the **playback path never resamples** (only genuine pitch shifts interpolate) and,
+  in shared mode, the OS doesn't resample the mix every buffer. An unshifted note plays at step 1.0.
   **Output defaults to WASAPI _shared_ at the device mix rate** so the **Windows volume slider works**,
   attacks aren't affected by exclusive stream start/stop, and other apps' audio coexists. Set
   **`VP_AUDIO_MODE=exclusive`** for **44.1 kHz bit-exact**, lowest latency — but it **bypasses the Windows
-  volume mixer** and takes the device exclusively. Mix bus = per-poly headroom + a **soft-knee** limiter (no
-  hard clipping). **Do not resample/filter on the _playback_ path, and do not add attack/release envelopes**
-  (they smear the pluck transient — the user rejected both). Resampling **once at load** is the sanctioned
-  way to match the device rate.
-- **Audio real-time rules (learned the hard way):** the mixer runs on the WASAPI render thread — keep it
-  **allocation-free** (fixed voice-slot pool, no per-buffer enumerator) or the GC pauses it into underruns.
-  Low-latency "pops" were **buffer underruns**, not signal bugs: **5 ms underran** with NAudio's default
-  render thread, **10 ms is clean and punchy**. To go lower reliably, add a custom WASAPI render thread
-  registered with **MMCSS "Pro Audio"**. The `VP_LATENCY_MS` env var forces a buffer size for testing.
+  volume mixer** and takes the device exclusively. **Do not resample/filter on the _playback_ path, and do
+  not add a *global* attack/release envelope** (it smears the pluck transient — the user rejected both; the
+  per-instrument envelope in §6 is opt-in). Resampling **once at load** is the sanctioned way to match the
+  device rate.
+- **Audio lesson (hard-won — don't reinvent the mixer):** an earlier **hand-rolled mixer** (a custom
+  `ISampleProvider` summing voices, fed straight to `WasapiOut`) produced a persistent **crackle in shared
+  mode** that bare NAudio playback did not — empirically isolated (it was **not** the lock, cubic interp,
+  limiter, samples, or resampling; it was the custom mix stage itself). **Fix: use NAudio's
+  `MixingSampleProvider`.** Don't hand-roll audio mixing when the library's is proven. Keep any render-thread
+  code **allocation-free** (no per-buffer enumerator/LINQ) so the GC can't pause it into underruns. Earlier
+  low-latency "pops" were **buffer underruns**: 5 ms underran; **10 ms is clean and punchy**; to go lower,
+  add a custom render thread on **MMCSS "Pro Audio"**. `VP_LATENCY_MS` and `VP_DIAG` (=`raw`|`engine`) env
+  vars remain for isolating audio issues.
 - **Input:** **DirectInput/HID** (or a standard Windows joystick), behind an **`IControllerInput`** abstraction
   that treats **gamepad and keyboard uniformly**. A **remap menu** binds each musical/system action to either a
   controller button/axis *or* a keyboard key. Keep it open to other backends.
@@ -91,14 +99,19 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
 ## 4. Codebase Map
 ```
 VirtuoPhoneGamePadWin.csproj   .NET 8 console exe
-Program.cs                     Entry point — still "Hello, World!" stub (needs app wiring)
-AppController.cs               Singleton; STRING_COUNT=6; GetInstrument() hard-codes new SteelGuitar()
+Program.cs                     Live play harness: F500 input → voice-led 3×3 chord grid → instrument; Select=instrument
+AppController.cs               Singleton; STRING_COUNT=8; instrument factory + cache; NextInstrument() cycles banks
 Audio/
   ISoundPool.cs                SoundPool API surface — the swappable audio seam
-  NAudioSoundPool.cs           Real engine: NVorbis decode, WASAPI exclusive @44.1k, cubic voice mixer + soft-knee
+  NAudioSoundPool.cs           Real engine: NVorbis decode, load-time cubic resample, NAudio MixingSampleProvider + WASAPI
+  VoiceSampleProvider.cs       One playing voice as an ISampleProvider (variable-rate read, envelope, glissando) — a mixer input
   DummySoundPool.cs            Silent/headless ISoundPool (tests / no audio device)
   AudioBackend.cs              Factory selecting the ISoundPool backend (default: NAudio)
   PointerMemory.cs             Tracks active stream IDs so they can be stopped together
+Input/
+  IControllerInput.cs          Controller abstraction (gamepad/keyboard uniform): Poll() → InputSnapshot (notes mask, Direction, Select…)
+  WinmmJoystick.cs             Low-level winmm P/Invoke (joyGetPosEx/joyGetDevCaps) — raw buttons + axes
+  WinmmControllerInput.cs      IControllerInput over WinmmJoystick: F500 button→note mask + 8-way stick → Direction
 Models/
   Note.cs                      Pitch as semitone int; C..B constants; pitch = noteType + octave*12
   Chord.cs                     Hard-coded voicings per ChordType; transpose; (de)serialize "name:typeId:noteType"
@@ -281,13 +294,14 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
 
 ## 8. Roadmap / TODO (suggested order)
 1. ✅ **Unblock the build** — `Resources/R.cs` generated; project compiles.
-2. ✅ **Audio engine** — `NAudioSoundPool` (NAudio + NVorbis, WASAPI shared ~50 ms, polyphonic, per-voice
-   pitch, tanh mix-bus limiter + voice cap) behind `ISoundPool`; swappable via `AudioBackend`.
-   `DummySoundPool` kept as the headless backend.
-3. ✅ **Prove audio end-to-end** — `Program.cs` plays a chord through the instrument: bit-exact, no
-   clipping, no pops at ~10 ms exclusive (verified by ear).
-4. ⏳ **Controller input (next):** read the Mayflash F500 (DirectInput/HID) + keyboard behind
-   `IControllerInput`, map buttons→notes / joystick→chord cell, driven off the audio thread.
+2. ✅ **Audio engine** — `NAudioSoundPool`: NAudio's `MixingSampleProvider` + WASAPI shared (~10 ms),
+   polyphonic, per-voice pitch/envelope/glissando (`VoiceSampleProvider`), voice cap + master headroom,
+   behind `ISoundPool`; swappable via `AudioBackend`. `DummySoundPool` kept as the headless backend.
+3. ✅ **Prove audio end-to-end** — `Program.cs` plays chords through the instrument: no clipping, and **no
+   pops or crackle at ~10 ms shared** (verified by ear, after switching to NAudio's mixer — see §3 lesson).
+4. ◐ **Controller input:** ✅ Mayflash F500 via `Input/WinmmControllerInput.cs` (winmm `joyGetPosEx`) behind
+   `IControllerInput` — buttons→notes, stick→chord cell, polled off the audio thread. **TODO:** keyboard
+   backend + the remap menu.
 5. **Preset persistence (JSON):** define the JSON schema for presets (3×3 chord layouts) and controller
    maps; implement load and save; migrate the §5 text serialization (or ship a converter).
 6. **Preset editing:** let the user build and modify chord layouts — set each joystick cell's chord
@@ -303,7 +317,8 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
 9. **Configurable audio (eventually):** expose the engine's currently baked-in choices as user settings
    (in the JSON config) — output **latency**, **exclusive vs shared**, **output device**, and **master
    volume**, plus a lower-latency **MMCSS "Pro Audio"** render path. Defaults stay as today (WASAPI
-   exclusive ~10 ms, 44.1 kHz); the `VP_LATENCY_MS` env var is only a temporary test hook to be replaced.
+   **shared** at the device rate, ~10 ms; `VP_AUDIO_MODE=exclusive` for 44.1 kHz bit-exact); the
+   `VP_LATENCY_MS`/`VP_DIAG` env vars are temporary test hooks to be replaced.
 10. ✅ **Voice leading** — `Models/VoiceLeading.cs`: each grid cell is re-voiced as the **closest inversion**
     to the centre voicing (per-position nearest chord tone; ties prefer the higher pitch) and **every chord
     tone is guaranteed present** (a completeness pass adds any missing tone at the cheapest over-represented
@@ -315,8 +330,10 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
 
 ## 9. Build & Run
 ```powershell
-dotnet build      # currently FAILS until the R class exists (see §2)
-dotnet run        # runs Program.cs (Hello World stub today)
+dotnet build                                 # builds (net8.0)
+dotnet run                                   # live play: F500 = chords/notes, Select = instrument, Ctrl+C to quit
+dotnet test Tests/VirtuoPhone.Tests.csproj   # unit tests (voice-leading, string-expander)
+VP_DIAG=engine dotnet run                    # audio diagnostic: play isolated notes through the engine
 ```
 Restore/build target framework is `net8.0`. When adding audio/input NuGet packages, add them to
 `VirtuoPhoneGamePadWin.csproj`.
