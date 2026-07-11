@@ -236,6 +236,11 @@ public abstract class Instrument : IEnumerable<Sample>
         return stringCount;
     }
 
+    public int GetMinPitchToPlay()
+    {
+        return minPitchToPlay;
+    }
+
     public bool IsAutoLoop()
     {
         return isAutoLoop;

@@ -17,4 +17,9 @@
     <None Update="res\raw\*.ogg" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- The test project lives under Tests/ but is a separate project; don't compile its files here. -->
+  <ItemGroup>
+    <Compile Remove="Tests\**\*.cs" />
+  </ItemGroup>
+
 </Project>

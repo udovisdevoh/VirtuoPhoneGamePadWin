@@ -303,7 +303,10 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
 10. **Voice leading (later):** when the joystick changes chord, pick the voicing that is the **closest
     inversion** to the neutral/center chord — minimising how far each button's note moves. E.g. centre E
     major `E B E G# B E G# B` → C major becomes `E C E G C E G C` (nearest inversion; notes move 0/±1).
-    Build a **dedicated class** for this (inspired by `StringExpander` / `Chord` in the ported code).
+    Build a **dedicated class** for this (inspired by `StringExpander` / `Chord` in the ported code). It must
+    also fix **chord-tone purity**: the ported `Chord` voicing templates contain non-chord tones — e.g. the
+    `maj` template is `E A E G# B E` (an **A**, the 4th) when E major should be `E B E G# B E`. Voicings must
+    use **only the chord's tones**, generated from the chord rather than the ported guitar templates.
 
 ---
 

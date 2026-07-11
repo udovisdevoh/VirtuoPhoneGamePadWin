@@ -91,7 +91,7 @@ public class Chord : IEnumerable<Note>
                 break;
             case ChordType.m:
                 noteList.Add(new Note(Note.E, 2));
-                noteList.Add(new Note(Note.A, 2));
+                noteList.Add(new Note(Note.B, 2));
                 noteList.Add(new Note(Note.E, 3));
                 noteList.Add(new Note(Note.G, 3));
                 noteList.Add(new Note(Note.B, 3));
@@ -139,7 +139,7 @@ public class Chord : IEnumerable<Note>
                 break;
             case ChordType.maj:
                 noteList.Add(new Note(Note.E, 2));
-                noteList.Add(new Note(Note.A, 2));
+                noteList.Add(new Note(Note.B, 2));
                 noteList.Add(new Note(Note.E, 3));
                 noteList.Add(new Note(Note.GSharp, 3));
                 noteList.Add(new Note(Note.B, 3));
