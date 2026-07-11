@@ -40,6 +40,11 @@ int[] playingPitch = new int[liveButtons];   // last pitch each button is soundi
 Array.Fill(playingPitch, int.MinValue);
 bool lastSelect = false;
 
+// Drone (bagpipes / sitar): a sustained root that follows the chord. Null for droneless instruments.
+Drone? drone = instrument.GetDrone();
+drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.GetKey());
+int droneTick = 0;
+
 // Interactive play runs until Home (or Ctrl+C). Non-interactive/automated runs (stdin redirected) stop on
 // their own so they never hang; VP_PLAY_SECONDS forces a fixed duration.
 int seconds;
@@ -67,6 +72,8 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
     {
         instrument = AppController.GetAppController().NextInstrument();
         Console.WriteLine($"[play] instrument -> {AppController.GetAppController().InstrumentName}");
+        drone = instrument.GetDrone();
+        drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.GetKey());
         Array.Fill(playingPitch, int.MinValue);
         for (int i = 0; i < liveButtons; i++)
             if ((snap.NotesMask & (1 << i)) != 0)
@@ -84,6 +91,7 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
         dir = snap.Dir;
         current = grid[dir];
         Console.WriteLine($"[play] chord -> {current}  ({dir})");
+        drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.GetKey());
 
         int sustained = lastMask & snap.NotesMask;
         for (int i = 0; i < liveButtons; i++)
@@ -107,8 +115,10 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
             playingPitch[i] = current[i].GetPitch();
             Console.WriteLine($"[play]   note {i}: {current[i].GetName()}");
         }
+    if (rising != 0) drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.GetKey());
 
     lastMask = snap.NotesMask;
+    if (drone != null && ++droneTick % 8 == 0) drone.OnTickUpdate(instrument.GetSoundPool());   // ~60 Hz glide
     Thread.Sleep(2);   // ~500 Hz input poll
 }
 

@@ -44,9 +44,13 @@ public class Drone
 
     public void OnPlayNoteUpdate(ISoundPool soundPool, GuitarPreset guitarPreset, Point coordinates)
     {
-        int droneFundamentalNoteType = currentChord;
+        OnPlayNoteUpdate(soundPool, guitarPreset.GetChordFundamentalNoteTypeAt(coordinates));
+    }
 
-        int chordFundamentalNoteType = guitarPreset.GetChordFundamentalNoteTypeAt(coordinates);
+    /// <summary>Update the drone to follow a chord root (note type 0-11): start it, or glide/retune it.</summary>
+    public void OnPlayNoteUpdate(ISoundPool soundPool, int chordFundamentalNoteType)
+    {
+        int droneFundamentalNoteType = currentChord;
 
         if (IsMinimizePitchShift())
         {
