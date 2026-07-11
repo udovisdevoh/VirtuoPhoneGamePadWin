@@ -85,6 +85,16 @@ var offsets = new Dictionary<Direction, int>
     [Direction.DownRight] = 3,   // G
 };
 
+// Outer "dash" cells (double-tap a cardinal): tension chords beyond the 3×3 edges — placeholder dim7 voicings
+// (cf. CLAUDE.md Example 0) until presets are editable. They transpose with the center like the inner cells.
+var outerOffsets = new Dictionary<Direction, int>
+{
+    [Direction.Up]    = 8,   // Cdim7 with center E
+    [Direction.Right] = 9,   // C#dim7
+    [Direction.Down]  = 7,   // Bdim7
+    [Direction.Left]  = 7,   // Bdim7
+};
+
 int centerRoot = Note.E;
 bool centerIsMinor = false;
 
@@ -107,7 +117,23 @@ Dictionary<Direction, (int[] Voicing, int Root, string Name)> BuildGrid(int cent
     return g;
 }
 
+Dictionary<Direction, (int[] Voicing, int Root, string Name)> BuildOuterGrid(int center, bool minorCenter)
+{
+    int[] anchor = new Chord(center, minorCenter ? ChordType.m : ChordType.maj).Select(n => n.GetPitch()).ToArray();
+    var g = new Dictionary<Direction, (int[] Voicing, int Root, string Name)>();
+    foreach (var (d, off) in outerOffsets)
+    {
+        int root = (center + off) % 12;
+        var chord = new Chord(root, ChordType.dim7);
+        var classes = new HashSet<int>();
+        foreach (Note n in chord) classes.Add(n.GetPitch() % 12);
+        g[d] = (VoiceLeading.ClosestVoicing(anchor, classes), root % 12, chord.ToString());
+    }
+    return g;
+}
+
 var grid = BuildGrid(centerRoot, centerIsMinor);
+var outerGrid = BuildOuterGrid(centerRoot, centerIsMinor);
 
 Direction dir = Direction.Neutral;
 var current = grid[dir];
@@ -122,6 +148,10 @@ bool lastSelect = false;
 bool lastStart = false;
 long lastStartMs = -10000;        // Start double-press timing (ms on the play stopwatch)
 const long doubleTapMs = 300;     // Start double-press window
+Direction? dashedDir = null;      // cardinal currently in "dash" (outer-cell) mode, or null
+Direction? lastTapDir = null;     // last cardinal entered, for directional double-tap (dash) detection
+long lastTapMs = -10000;
+const long dashMs = 350;          // directional double-tap (dash) window
 
 // Monophonic instruments (bagpipes chanter) use last-note priority with fall-back to still-held notes.
 var heldMono = new List<int>();   // press-order stack of currently-held note buttons
@@ -148,7 +178,7 @@ for (int i = 0; i < liveButtons; i++)
 Console.WriteLine();
 Console.WriteLine(seconds > 0
     ? $"[play] Play! (joystick=chord, buttons=notes, Select=instrument; auto-stop {seconds}s)"
-    : "[play] Play! (joystick=chord, buttons=notes, Select=instrument, Start=modulate [double-tap=minor]; Ctrl+C to quit)");
+    : "[play] Play! (stick=chord, buttons=notes, Select=instrument, Start=modulate/dbl=minor, dbl-tap a dir=outer chord; Ctrl+C)");
 
 var sw = System.Diagnostics.Stopwatch.StartNew();
 while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
@@ -208,19 +238,42 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
             (centerRoot, centerIsMinor) = ((centerRoot + offsets[snap.Dir]) % 12, false);    // transpose, major
 
         grid = BuildGrid(centerRoot, centerIsMinor);
+        outerGrid = BuildOuterGrid(centerRoot, centerIsMinor);
+        dashedDir = null;
         gridChanged = true;
         Console.WriteLine($"[play] MODULATE -> center {new Note(centerRoot).GetName()}{(centerIsMinor ? "m" : "")}"
                           + (doublePress ? "  (double->minor)" : $"  (via {snap.Dir})"));
     }
     lastStart = snap.Start;
 
-    // Joystick changed the chord (or the grid was just re-centered): retune the drone; held notes re-voice below.
-    bool chordChanged = snap.Dir != dir || gridChanged;
+    // Directional double-tap ("dash"): tapping a cardinal direction twice quickly (returning toward neutral
+    // between taps) selects that direction's OUTER cell (an alternate tension chord) instead of its inner one.
+    // The dash holds while the stick stays on that direction; leaving it reverts to the inner grid.
+    bool dirChanged = snap.Dir != dir;
+    if (dirChanged)
+    {
+        if (snap.Dir is Direction.Up or Direction.Down or Direction.Left or Direction.Right)
+        {
+            long nowMs = sw.ElapsedMilliseconds;
+            dashedDir = (snap.Dir == lastTapDir && nowMs - lastTapMs <= dashMs) ? snap.Dir : null;
+            lastTapDir = snap.Dir;
+            lastTapMs = nowMs;
+        }
+        else
+        {
+            dashedDir = null;                                        // left the dashed cell
+            if (snap.Dir != Direction.Neutral) lastTapDir = null;    // a diagonal breaks the tap chain; neutral keeps it
+        }
+        dir = snap.Dir;
+    }
+
+    // Chord in effect = the dashed outer cell, else the inner grid cell. Recompute on any direction/grid change.
+    bool chordChanged = dirChanged || gridChanged;
     if (chordChanged)
     {
-        dir = snap.Dir;
-        current = grid[dir];
-        if (!gridChanged) Console.WriteLine($"[play] chord -> {current.Name}  ({dir})");
+        bool dash = dashedDir == dir;
+        current = dash ? outerGrid[dir] : grid[dir];
+        if (!gridChanged) Console.WriteLine($"[play] chord -> {current.Name}  ({dir}{(dash ? " dash!" : "")})");
         drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.Root);
     }
 

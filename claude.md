@@ -183,8 +183,10 @@ Must be highly responsive: crisp execution, rapid directional inputs, low-latenc
 - **Dynamic pitch-bend / sample-swap:** if a button is **held** while the joystick moves, the sounding note
   pitch-bends or swaps to the corresponding sample in the new chord/scale (see `Instrument.SetStreamPitch`,
   `IsPitchBend`).
-- **Directional double-tap ("dash"):** quickly tapping a cardinal direction twice triggers an alternate
-  preset tied to that extremity (the outer cells in the extended matrices).
+- **Directional double-tap ("dash"):** ✅ quickly tapping a cardinal direction twice (D→neutral→D within
+  ~350 ms) selects that direction's **outer cell** — an alternate tension chord beyond the 3×3 edge. The dash
+  holds while the stick stays on that direction and reverts on leaving it. Outer cells are offsets from the
+  center (they transpose with modulation); currently placeholder **dim7** voicings until presets are editable.
 - **System buttons:**
   - **Select:** cycle loaded instruments (sample banks).
   - **Start (modulation):** ✅ implemented in the play harness. The grid is stored as semitone **offsets from
@@ -317,9 +319,10 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
    `Chord.SetFundamental`); this adds the authoring workflow (its editor UI lands with the UI work below).
 7. **Interaction logic & voice management:** ✅ done in the play harness — per-button polyphony, held-note
    swap on chord change, per-instrument note-off, monophony (last-note priority + fall-back), optional
-   violin envelope, drones (bagpipes/sitar), Select = change instrument, and **Start = modulation** (single
-   press transposes the grid so the aimed cell becomes the new major center; double-tap forces that center
-   minor). **Remaining:** the double-tap "dash" alternate presets (the outer matrix cells). See §6.
+   violin envelope, drones (bagpipes/sitar), Select = change instrument, **Start = modulation** (single press
+   transposes the grid so the aimed cell becomes the new major center; double-tap forces that center minor),
+   and the **double-tap "dash"** (a cardinal tapped twice selects its outer tension cell). The §6 interaction
+   mechanics are now complete; presets/UI are next. See §6.
 8. **UI:** replace the console with a real UI showing the active cell, instrument, and note layout,
    and hosting the preset editor from step 6.
 9. **Configurable audio (eventually):** expose the engine's currently baked-in choices as user settings
