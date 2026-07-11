@@ -79,6 +79,7 @@ public abstract class Instrument : IEnumerable<Sample>
         {
             drone.IsLazyHarmonic(BuildIsLazyHarmonicDrone());
             drone.IsMinimizePitchShift(BuildIsDroneMinimizePitchShift());
+            drone.IsFixed(BuildIsDroneFixed());
         }
     }
 
@@ -92,6 +93,10 @@ public abstract class Instrument : IEnumerable<Sample>
 
     // Monophonic instruments (e.g. bagpipes chanter) sound one melody note at a time. Default: polyphonic.
     protected virtual bool BuildIsMonophonic() => false;
+
+    // A fixed drone ignores joystick chord changes and holds its own note (like real bagpipes); it only
+    // moves when the layout is modulated. Default: the drone follows the chord (e.g. the sitar tampura).
+    protected virtual bool BuildIsDroneFixed() => false;
 
     protected abstract bool BuildIsDroneMinimizePitchShift();
 

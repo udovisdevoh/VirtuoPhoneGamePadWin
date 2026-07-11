@@ -12,6 +12,8 @@ public class Drone
 
     private bool isMinimizePitchShift = false;
 
+    private bool isFixed = false;
+
     private int noteType;
 
     private int resourceId;
@@ -50,6 +52,8 @@ public class Drone
     /// <summary>Update the drone to follow a chord root (note type 0-11): start it, or glide/retune it.</summary>
     public void OnPlayNoteUpdate(ISoundPool soundPool, int chordFundamentalNoteType)
     {
+        if (isFixed) chordFundamentalNoteType = noteType;   // fixed drone: hold our own note, ignore chords
+
         int droneFundamentalNoteType = currentChord;
 
         if (IsMinimizePitchShift())
@@ -287,6 +291,16 @@ public class Drone
     public void IsLazyHarmonic(bool isLazyHarmonic)
     {
         this.isLazyHarmonic = isLazyHarmonic;
+    }
+
+    public void IsFixed(bool isFixed)
+    {
+        this.isFixed = isFixed;
+    }
+
+    public bool IsFixed()
+    {
+        return isFixed;
     }
 
     public void IsMinimizePitchShift(bool isMinimizePitchShift)
