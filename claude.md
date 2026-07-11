@@ -115,7 +115,7 @@ Input/
 Models/
   Note.cs                      Pitch as semitone int; C..B constants; pitch = noteType + octave*12
   Chord.cs                     Hard-coded voicings per ChordType; transpose; (de)serialize "name:typeId:noteType"
-  ChordType.cs                 enum: maj/min/7ths/9ths/sus/dim/aug/pentatonics/"ff_" full-fret sets…
+  ChordType.cs                 enum: maj/min/7ths/9ths/sus/dim/aug/pentatonics/"ff_" sets/7 modes/harmonic&melodic-minor scales…
   GuitarPreset.cs              Ordered List<Chord>; indexed by Point(X=string, Y=chord); serialize by lines
   Sample.cs                    One .ogg mapped to an original pitch; 12-TET rate = 1.0594632^(Δsemitone+bend)
   MultiSampleSet.cs            Multiple samples for one pitch; GetRandomSample() for round-robin variation
@@ -187,11 +187,12 @@ Must be highly responsive: crisp execution, rapid directional inputs, low-latenc
   preset tied to that extremity (the outer cells in the extended matrices).
 - **System buttons:**
   - **Select:** cycle loaded instruments (sample banks).
-  - **Start (modulation):**
-    - *Single + direction:* transpose the whole layout so that direction becomes the new neutral/center root;
-      other cells scale relatively (interval math on the 3×3 grid).
-    - *Double press:* force the new neutral cell to be **minor**; other cells keep their explicit preset value
-      or default to major.
+  - **Start (modulation):** ✅ implemented in the play harness. The grid is stored as semitone **offsets from
+    the center**; a Start press moves the center:
+    - *Single press (+ aimed direction):* transpose so the aimed cell's chord becomes the new center (MAJOR);
+      every cell shifts by the same interval. Pressing at neutral resets the center to major.
+    - *Double-press (within ~300 ms):* recolor the just-established center to **minor** in place — no extra
+      transpose; other cells stay major. Non-blocking, timestamp-based detection off the audio path.
 - **Remappable controls:** a **remap menu** lets every action be rebound to a controller button/axis **or a
   keyboard key** (keyboard and gamepad are interchangeable input sources), persisted in the JSON config.
 
@@ -316,8 +317,9 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
    `Chord.SetFundamental`); this adds the authoring workflow (its editor UI lands with the UI work below).
 7. **Interaction logic & voice management:** ✅ done in the play harness — per-button polyphony, held-note
    swap on chord change, per-instrument note-off, monophony (last-note priority + fall-back), optional
-   violin envelope, drones (bagpipes/sitar), and Select = change instrument. **Remaining:** the double-tap
-   "dash" alternate presets and the **Start-button modulation** (transpose / force-minor). See §6.
+   violin envelope, drones (bagpipes/sitar), Select = change instrument, and **Start = modulation** (single
+   press transposes the grid so the aimed cell becomes the new major center; double-tap forces that center
+   minor). **Remaining:** the double-tap "dash" alternate presets (the outer matrix cells). See §6.
 8. **UI:** replace the console with a real UI showing the active cell, instrument, and note layout,
    and hosting the preset editor from step 6.
 9. **Configurable audio (eventually):** expose the engine's currently baked-in choices as user settings

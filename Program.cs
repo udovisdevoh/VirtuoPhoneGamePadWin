@@ -69,30 +69,45 @@ Instrument instrument = AppController.GetAppController().GetInstrument();
 int strings = instrument.GetStringCount();
 Console.WriteLine($"[play] instrument: {strings} strings — the first {strings} note buttons are live.");
 
-// 3×3 chord grid (Chromatic Spiral, CLAUDE.md Example 2), neutral center = E. Each cell is voice-led to the
-// CENTER's voicing (closest inversion) and pre-rendered ONCE here — the joystick just looks up the result.
-int[] centerVoicing = new Chord(Note.E, ChordType.maj).Select(n => n.GetPitch()).ToArray();
-
-(int[] Voicing, int Root, string Name) MakeCell(int root, ChordType type)
+// 3×3 chord grid (Chromatic Spiral, CLAUDE.md Example 2) as semitone OFFSETS from the center, so the whole
+// layout can be transposed (Start-button modulation) just by moving the center. Each cell is voice-led to the
+// current center's voicing (closest inversion); the grid is rebuilt whenever the center changes.
+var offsets = new Dictionary<Direction, int>
 {
-    var chord = new Chord(root, type);
-    var classes = new HashSet<int>();
-    foreach (Note n in chord) classes.Add(n.GetPitch() % 12);
-    return (VoiceLeading.ClosestVoicing(centerVoicing, classes), root % 12, chord.ToString());
+    [Direction.UpLeft]    = 8,   // originally C (with center E)
+    [Direction.Up]        = 10,  // D
+    [Direction.UpRight]   = 1,   // F
+    [Direction.Left]      = 7,   // B
+    [Direction.Neutral]   = 0,   // E — the center
+    [Direction.Right]     = 2,   // F#
+    [Direction.DownLeft]  = 6,   // A#
+    [Direction.Down]      = 5,   // A
+    [Direction.DownRight] = 3,   // G
+};
+
+int centerRoot = Note.E;
+bool centerIsMinor = false;
+
+Dictionary<Direction, (int[] Voicing, int Root, string Name)> BuildGrid(int center, bool minorCenter)
+{
+    // Anchor = the center chord's own voicing; every cell is voice-led to it. The center goes minor on a
+    // double-press modulation; all other cells stay major (the preset has no explicit per-cell quality yet).
+    int[] anchor = new Chord(center, minorCenter ? ChordType.m : ChordType.maj).Select(n => n.GetPitch()).ToArray();
+
+    var g = new Dictionary<Direction, (int[] Voicing, int Root, string Name)>();
+    foreach (var (d, off) in offsets)
+    {
+        int root = (center + off) % 12;
+        ChordType type = (d == Direction.Neutral && minorCenter) ? ChordType.m : ChordType.maj;
+        var chord = new Chord(root, type);
+        var classes = new HashSet<int>();
+        foreach (Note n in chord) classes.Add(n.GetPitch() % 12);
+        g[d] = (VoiceLeading.ClosestVoicing(anchor, classes), root % 12, chord.ToString());
+    }
+    return g;
 }
 
-var grid = new Dictionary<Direction, (int[] Voicing, int Root, string Name)>
-{
-    [Direction.UpLeft]    = MakeCell(Note.C,      ChordType.maj),
-    [Direction.Up]        = MakeCell(Note.D,      ChordType.maj),
-    [Direction.UpRight]   = MakeCell(Note.F,      ChordType.maj),
-    [Direction.Left]      = MakeCell(Note.B,      ChordType.maj),
-    [Direction.Neutral]   = MakeCell(Note.E,      ChordType.maj),
-    [Direction.Right]     = MakeCell(Note.FSharp, ChordType.maj),
-    [Direction.DownLeft]  = MakeCell(Note.ASharp, ChordType.maj),
-    [Direction.Down]      = MakeCell(Note.A,      ChordType.maj),
-    [Direction.DownRight] = MakeCell(Note.G,      ChordType.maj),
-};
+var grid = BuildGrid(centerRoot, centerIsMinor);
 
 Direction dir = Direction.Neutral;
 var current = grid[dir];
@@ -104,6 +119,9 @@ int[] streamId = new int[liveButtons];        // active stream per button (to st
 int[] basePitch = new int[liveButtons];       // pitch each button's current voice was STRUCK at (glissando anchor)
 Array.Fill(basePitch, int.MinValue);
 bool lastSelect = false;
+bool lastStart = false;
+long lastStartMs = -10000;        // Start double-press timing (ms on the play stopwatch)
+const long doubleTapMs = 300;     // Start double-press window
 
 // Monophonic instruments (bagpipes chanter) use last-note priority with fall-back to still-held notes.
 var heldMono = new List<int>();   // press-order stack of currently-held note buttons
@@ -130,7 +148,7 @@ for (int i = 0; i < liveButtons; i++)
 Console.WriteLine();
 Console.WriteLine(seconds > 0
     ? $"[play] Play! (joystick=chord, buttons=notes, Select=instrument; auto-stop {seconds}s)"
-    : "[play] Play! (joystick=chord, buttons=notes, Select=change instrument; Ctrl+C to quit)");
+    : "[play] Play! (joystick=chord, buttons=notes, Select=instrument, Start=modulate [double-tap=minor]; Ctrl+C to quit)");
 
 var sw = System.Diagnostics.Stopwatch.StartNew();
 while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
@@ -174,13 +192,35 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
     }
     lastSelect = snap.Select;
 
-    // Joystick changed the chord: retune the drone; held notes are re-voiced below.
-    bool chordChanged = snap.Dir != dir;
+    // Start-button modulation: a press transposes the grid so the aimed cell's chord becomes the new center
+    // (single press → MAJOR center); a quick double-press then recolors that new center to MINOR (other cells
+    // stay major). Non-blocking, timestamp-based double-tap detection; the 2nd tap only recolors (no re-transpose).
+    bool gridChanged = false;
+    if (snap.Start && !lastStart)
+    {
+        long nowMs = sw.ElapsedMilliseconds;
+        bool doublePress = nowMs - lastStartMs <= doubleTapMs;
+        lastStartMs = nowMs;
+
+        if (doublePress)
+            centerIsMinor = true;                                                            // recolor in place
+        else
+            (centerRoot, centerIsMinor) = ((centerRoot + offsets[snap.Dir]) % 12, false);    // transpose, major
+
+        grid = BuildGrid(centerRoot, centerIsMinor);
+        gridChanged = true;
+        Console.WriteLine($"[play] MODULATE -> center {new Note(centerRoot).GetName()}{(centerIsMinor ? "m" : "")}"
+                          + (doublePress ? "  (double->minor)" : $"  (via {snap.Dir})"));
+    }
+    lastStart = snap.Start;
+
+    // Joystick changed the chord (or the grid was just re-centered): retune the drone; held notes re-voice below.
+    bool chordChanged = snap.Dir != dir || gridChanged;
     if (chordChanged)
     {
         dir = snap.Dir;
         current = grid[dir];
-        Console.WriteLine($"[play] chord -> {current.Name}  ({dir})");
+        if (!gridChanged) Console.WriteLine($"[play] chord -> {current.Name}  ({dir})");
         drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.Root);
     }
 
