@@ -37,7 +37,11 @@ Chord current = grid[dir];
 int lastMask = 0;
 
 int seconds = int.TryParse(Environment.GetEnvironmentVariable("VP_PLAY_SECONDS"), out int sec) && sec > 0 ? sec : 120;
-Console.WriteLine($"[play] neutral chord: {current}. Play! (joystick = chord, buttons = notes; Home quits; auto-stop {seconds}s)");
+Console.Write($"[play] neutral chord: {current} — notes:");
+for (int i = 0; i < strings && i < input.NoteButtonCount; i++)
+    Console.Write($" b{i}={current[i].GetName()}({current[i].GetPitch()})");
+Console.WriteLine();
+Console.WriteLine($"[play] Play! (joystick = chord, buttons = notes; Home quits; auto-stop {seconds}s)");
 
 var sw = System.Diagnostics.Stopwatch.StartNew();
 while (sw.Elapsed.TotalSeconds < seconds)

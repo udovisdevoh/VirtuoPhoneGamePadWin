@@ -15,9 +15,14 @@ public class StringExpander
 
         int stringCountToAdd = desiredStringCount - chord.Count;
 
+        // Only re-center by dropping an octave on LARGE expansions (e.g. the 17-note harp). For a small
+        // expansion like the guitar's 6→8, the periodic drop pushes the lowest notes below the instrument's
+        // minPitchToPlay and silences them — so keep the added notes stacked above instead.
+        bool allowOctaveDrop = stringCountToAdd > 2;
+
         while (stringCountToAdd > 0)
         {
-            if (stringCountToAdd % 3 == 1)
+            if (allowOctaveDrop && stringCountToAdd % 3 == 1)
             {
                 ReduceOctaveAllNotes(chord);
             }
