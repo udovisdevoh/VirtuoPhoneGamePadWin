@@ -38,19 +38,44 @@ int lastMask = 0;
 int liveButtons = Math.Min(strings, input.NoteButtonCount);
 int[] playingPitch = new int[liveButtons];   // last pitch each button is sounding (for held-note swap)
 Array.Fill(playingPitch, int.MinValue);
+bool lastSelect = false;
 
-int seconds = int.TryParse(Environment.GetEnvironmentVariable("VP_PLAY_SECONDS"), out int sec) && sec > 0 ? sec : 120;
+// Interactive play runs until Home (or Ctrl+C). Non-interactive/automated runs (stdin redirected) stop on
+// their own so they never hang; VP_PLAY_SECONDS forces a fixed duration.
+int seconds;
+if (int.TryParse(Environment.GetEnvironmentVariable("VP_PLAY_SECONDS"), out int sec) && sec > 0)
+    seconds = sec;
+else if (Console.IsInputRedirected)
+    seconds = 5;
+else
+    seconds = 0;   // 0 = no time limit
 Console.Write($"[play] neutral chord: {current} — notes:");
 for (int i = 0; i < strings && i < input.NoteButtonCount; i++)
     Console.Write($" b{i}={current[i].GetName()}({current[i].GetPitch()})");
 Console.WriteLine();
-Console.WriteLine($"[play] Play! (joystick = chord, buttons = notes; Home quits; auto-stop {seconds}s)");
+Console.WriteLine(seconds > 0
+    ? $"[play] Play! (joystick=chord, buttons=notes, Select=instrument; auto-stop {seconds}s)"
+    : "[play] Play! (joystick=chord, buttons=notes, Select=change instrument; Ctrl+C to quit)");
 
 var sw = System.Diagnostics.Stopwatch.StartNew();
-while (sw.Elapsed.TotalSeconds < seconds)
+while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
 {
     InputSnapshot snap = input.Poll();
-    if (snap.Home) break;
+
+    // Select cycles the instrument; re-trigger any held buttons on the new one. (Home is reserved — TBD.)
+    if (snap.Select && !lastSelect)
+    {
+        instrument = AppController.GetAppController().NextInstrument();
+        Console.WriteLine($"[play] instrument -> {AppController.GetAppController().InstrumentName}");
+        Array.Fill(playingPitch, int.MinValue);
+        for (int i = 0; i < liveButtons; i++)
+            if ((snap.NotesMask & (1 << i)) != 0)
+            {
+                instrument.Play(current[i], i, 0f);
+                playingPitch[i] = current[i].GetPitch();
+            }
+    }
+    lastSelect = snap.Select;
 
     // Joystick changed the chord while playing: immediately swap the note of every HELD button whose note
     // differs in the new chord — no re-press needed. Buttons whose note is unchanged keep ringing.
