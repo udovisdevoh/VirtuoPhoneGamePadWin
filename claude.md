@@ -107,6 +107,7 @@ Models/
   Sample.cs                    One .ogg mapped to an original pitch; 12-TET rate = 1.0594632^(Δsemitone+bend)
   MultiSampleSet.cs            Multiple samples for one pitch; GetRandomSample() for round-robin variation
   StringExpander.cs            Grow/shrink a chord's note count to match instrument string count
+  VoiceLeading.cs              Closest-inversion re-voicing (minimal movement, keeps all chord tones)
   Drone.cs                     Sustained bass that follows chord roots (glide, lazy-harmonic, min-pitch-shift)
   PlayingStringMemory.cs       Per-string → stream-id map (mute previous note on same string)
   Instruments/
@@ -300,13 +301,12 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
    (in the JSON config) — output **latency**, **exclusive vs shared**, **output device**, and **master
    volume**, plus a lower-latency **MMCSS "Pro Audio"** render path. Defaults stay as today (WASAPI
    exclusive ~10 ms, 44.1 kHz); the `VP_LATENCY_MS` env var is only a temporary test hook to be replaced.
-10. **Voice leading (later):** when the joystick changes chord, pick the voicing that is the **closest
-    inversion** to the neutral/center chord — minimising how far each button's note moves. E.g. centre E
-    major `E B E G# B E G# B` → C major becomes `E C E G C E G C` (nearest inversion; notes move 0/±1).
-    Build a **dedicated class** for this (inspired by `StringExpander` / `Chord` in the ported code). It must
-    also fix **chord-tone purity**: the ported `Chord` voicing templates contain non-chord tones — e.g. the
-    `maj` template is `E A E G# B E` (an **A**, the 4th) when E major should be `E B E G# B E`. Voicings must
-    use **only the chord's tones**, generated from the chord rather than the ported guitar templates.
+10. ✅ **Voice leading** — `Models/VoiceLeading.cs`: each grid cell is re-voiced as the **closest inversion**
+    to the centre voicing (per-position nearest chord tone; ties prefer the higher pitch) and **every chord
+    tone is guaranteed present** (a completeness pass adds any missing tone at the cheapest over-represented
+    position). **Pre-rendered once** per preset (not recomputed on chord change) — the play harness builds
+    the grid via a `MakeCell` that calls `ClosestVoicing`. E.g. centre E major `E B E G# B E G# B` → C major
+    = `E C E G C E G C`. Verified by unit tests against the worked examples (E→C/A/F/B/Am, C→E).
 
 ---
 
