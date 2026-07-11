@@ -36,18 +36,23 @@ Direction dir = Direction.Neutral;
 Chord current = grid[dir];
 int lastMask = 0;
 int liveButtons = Math.Min(strings, input.NoteButtonCount);
-int[] playingPitch = new int[liveButtons];   // last pitch each button is sounding (for held-note swap)
+int[] playingPitch = new int[liveButtons];   // last pitch each button is sounding (polyphonic held-note swap)
 Array.Fill(playingPitch, int.MinValue);
 int[] streamId = new int[liveButtons];        // active stream per button (to stop looping notes on release)
 bool lastSelect = false;
+
+// Monophonic instruments (bagpipes chanter) use last-note priority with fall-back to still-held notes.
+var heldMono = new List<int>();   // press-order stack of currently-held note buttons
+int monoButton = -1;              // the note button currently sounding (-1 = none)
+int monoStreamId = 0;
 
 // Drone (bagpipes / sitar): a sustained root that follows the chord. Null for droneless instruments.
 Drone? drone = instrument.GetDrone();
 drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.GetKey());
 int droneTick = 0;
 
-// Interactive play runs until Home (or Ctrl+C). Non-interactive/automated runs (stdin redirected) stop on
-// their own so they never hang; VP_PLAY_SECONDS forces a fixed duration.
+// Interactive play runs until Ctrl+C. Non-interactive/automated runs (stdin redirected) stop on their own
+// so they never hang; VP_PLAY_SECONDS forces a fixed duration.
 int seconds;
 if (int.TryParse(Environment.GetEnvironmentVariable("VP_PLAY_SECONDS"), out int sec) && sec > 0)
     seconds = sec;
@@ -67,65 +72,90 @@ var sw = System.Diagnostics.Stopwatch.StartNew();
 while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
 {
     InputSnapshot snap = input.Poll();
+    int rising = snap.NotesMask & ~lastMask;
+    int falling = lastMask & ~snap.NotesMask;
 
-    // Select cycles the instrument; re-trigger any held buttons on the new one. (Home is reserved — TBD.)
+    // Select cycles the instrument; reset voicing state and re-trigger any held buttons on the new one.
     if (snap.Select && !lastSelect)
     {
         instrument = AppController.GetAppController().NextInstrument();
         Console.WriteLine($"[play] instrument -> {AppController.GetAppController().InstrumentName}");
         drone = instrument.GetDrone();
         drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.GetKey());
+
         Array.Fill(playingPitch, int.MinValue);
+        Array.Fill(streamId, 0);
+        heldMono.Clear();
+        monoButton = -1;
+        monoStreamId = 0;
         for (int i = 0; i < liveButtons; i++)
-            if ((snap.NotesMask & (1 << i)) != 0)
-            {
-                streamId[i] = instrument.Play(current[i], i, 0f);
-                playingPitch[i] = current[i].GetPitch();
-            }
+            if ((snap.NotesMask & (1 << i)) != 0) heldMono.Add(i);
+
+        if (instrument.IsMonophonic())
+        {
+            monoButton = heldMono.Count > 0 ? heldMono[^1] : -1;
+            if (monoButton >= 0) monoStreamId = instrument.Play(current[monoButton], monoButton, 0f);
+        }
+        else
+        {
+            for (int i = 0; i < liveButtons; i++)
+                if ((snap.NotesMask & (1 << i)) != 0)
+                {
+                    streamId[i] = instrument.Play(current[i], i, 0f);
+                    playingPitch[i] = current[i].GetPitch();
+                }
+        }
     }
     lastSelect = snap.Select;
 
-    // Joystick changed the chord while playing: immediately swap the note of every HELD button whose note
-    // differs in the new chord — no re-press needed. Buttons whose note is unchanged keep ringing.
-    if (snap.Dir != dir)
+    // Joystick changed the chord: retune the drone; held notes are re-voiced below.
+    bool chordChanged = snap.Dir != dir;
+    if (chordChanged)
     {
         dir = snap.Dir;
         current = grid[dir];
         Console.WriteLine($"[play] chord -> {current}  ({dir})");
         drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.GetKey());
-
-        int sustained = lastMask & snap.NotesMask;
-        for (int i = 0; i < liveButtons; i++)
-            if ((sustained & (1 << i)) != 0)
-            {
-                int newPitch = current[i].GetPitch();
-                if (streamId[i] != 0 && newPitch != playingPitch[i])
-                {
-                    streamId[i] = instrument.Play(current[i], i, 0f);   // same-string mute steals the old voice
-                    playingPitch[i] = newPitch;
-                }
-            }
     }
 
-    // Newly pressed buttons: pluck the current chord's note. Monophonic instruments (bagpipes chanter)
-    // sound one note at a time — a new press stops the others and only the newest sounds.
-    int rising = snap.NotesMask & ~lastMask;
-    if (instrument.IsMonophonic() && rising != 0)
+    if (instrument.IsMonophonic())
     {
-        for (int i = 0; i < liveButtons; i++)
-            if (streamId[i] != 0) { instrument.Stop(streamId[i]); streamId[i] = 0; playingPitch[i] = int.MinValue; }
+        // Last-note priority: newest held button sounds; releasing it falls back to the one still held.
+        for (int i = 0; i < liveButtons; i++) if ((falling & (1 << i)) != 0) heldMono.Remove(i);
+        for (int i = 0; i < liveButtons; i++) if ((rising & (1 << i)) != 0) { heldMono.Remove(i); heldMono.Add(i); }
 
-        int pick = -1;
-        for (int i = 0; i < liveButtons; i++) if ((rising & (1 << i)) != 0) pick = i;   // newest press wins
-        if (pick >= 0)
+        int active = heldMono.Count > 0 ? heldMono[^1] : -1;
+        if (active != monoButton || (chordChanged && active >= 0))
         {
-            streamId[pick] = instrument.Play(current[pick], pick, 0f);
-            playingPitch[pick] = current[pick].GetPitch();
-            Console.WriteLine($"[play]   note {pick}: {current[pick].GetName()} (mono)");
+            if (monoStreamId != 0) { instrument.Stop(monoStreamId); monoStreamId = 0; }
+            if (active >= 0)
+            {
+                monoStreamId = instrument.Play(current[active], active, 0f);
+                if (active != monoButton)
+                    Console.WriteLine($"[play]   note {active}: {current[active].GetName()} (mono)");
+            }
+            monoButton = active;
         }
     }
     else
     {
+        // Held-note swap on chord change: re-voice every still-held, still-sounding button whose note changed.
+        if (chordChanged)
+        {
+            int sustained = lastMask & snap.NotesMask;
+            for (int i = 0; i < liveButtons; i++)
+                if ((sustained & (1 << i)) != 0 && streamId[i] != 0)
+                {
+                    int newPitch = current[i].GetPitch();
+                    if (newPitch != playingPitch[i])
+                    {
+                        streamId[i] = instrument.Play(current[i], i, 0f);   // same-string mute steals the old voice
+                        playingPitch[i] = newPitch;
+                    }
+                }
+        }
+
+        // Newly pressed buttons: pluck the current chord's note.
         for (int i = 0; i < liveButtons; i++)
             if ((rising & (1 << i)) != 0)
             {
@@ -133,21 +163,19 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
                 playingPitch[i] = current[i].GetPitch();
                 Console.WriteLine($"[play]   note {i}: {current[i].GetName()}");
             }
-    }
-    if (rising != 0) drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.GetKey());
 
-    // Note-off: looping/sustained instruments stop when the button is released; plucked ones ring out.
-    if (instrument.IsAutoLoop())
-    {
-        int falling = lastMask & ~snap.NotesMask;
-        for (int i = 0; i < liveButtons; i++)
-            if ((falling & (1 << i)) != 0 && streamId[i] != 0)
-            {
-                instrument.Stop(streamId[i]);
-                streamId[i] = 0;
-                playingPitch[i] = int.MinValue;
-            }
+        // Note-off: looping/sustained instruments stop when the button is released; plucked ones ring out.
+        if (instrument.IsAutoLoop())
+            for (int i = 0; i < liveButtons; i++)
+                if ((falling & (1 << i)) != 0 && streamId[i] != 0)
+                {
+                    instrument.Stop(streamId[i]);
+                    streamId[i] = 0;
+                    playingPitch[i] = int.MinValue;
+                }
     }
+
+    if (rising != 0) drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.GetKey());
 
     lastMask = snap.NotesMask;
     if (drone != null && ++droneTick % 8 == 0) drone.OnTickUpdate(instrument.GetSoundPool());   // ~60 Hz glide
