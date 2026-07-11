@@ -34,6 +34,12 @@ public abstract class Instrument : IEnumerable<Sample>
 
     private bool isAutoLoop;
 
+    private float attackSeconds;
+
+    private float releaseSeconds;
+
+    private bool isMonophonic;
+
     public Instrument()
     {
         random = new Random();
@@ -42,6 +48,9 @@ public abstract class Instrument : IEnumerable<Sample>
         isAutoLoop = BuildIsAutoLoop();
         isAutoLoopKeepNoteUntilNewNote = BuildIsAutoLoopKeepNoteUntilNewNote();
         isPitchBend = BuildIsPitchBend();
+        attackSeconds = BuildAttackSeconds();
+        releaseSeconds = BuildReleaseSeconds();
+        isMonophonic = BuildIsMonophonic();
         polyphony = stringCount * 2;
         soundPool = AudioBackend.Create(polyphony);
         //streamIdByStringBeingPlayed = new int[AppController.STRING_COUNT];
@@ -74,6 +83,15 @@ public abstract class Instrument : IEnumerable<Sample>
     }
 
     protected abstract bool BuildIsAutoLoopKeepNoteUntilNewNote();
+
+    // Optional per-instrument envelope in seconds; 0 = no fade (default). Only instruments that need
+    // smoothing (e.g. the bowed violin) override these — plucked/percussive ones stay hard-edged.
+    protected virtual float BuildAttackSeconds() => 0f;
+
+    protected virtual float BuildReleaseSeconds() => 0f;
+
+    // Monophonic instruments (e.g. bagpipes chanter) sound one melody note at a time. Default: polyphonic.
+    protected virtual bool BuildIsMonophonic() => false;
 
     protected abstract bool BuildIsDroneMinimizePitchShift();
 
@@ -207,11 +225,11 @@ public abstract class Instrument : IEnumerable<Sample>
 
         if (isAutoLoop)
         {
-            streamId = soundPool.Play(sample.GetSoundId(), sample.GetVolume(), sample.GetVolume(), 1, -1, rate);
+            streamId = soundPool.Play(sample.GetSoundId(), sample.GetVolume(), sample.GetVolume(), 1, -1, rate, attackSeconds, releaseSeconds);
         }
         else
         {
-            streamId = soundPool.Play(sample.GetSoundId(), sample.GetVolume(), sample.GetVolume(), 1, 0, rate);
+            streamId = soundPool.Play(sample.GetSoundId(), sample.GetVolume(), sample.GetVolume(), 1, 0, rate, attackSeconds, releaseSeconds);
         }
 
 
@@ -240,6 +258,12 @@ public abstract class Instrument : IEnumerable<Sample>
     {
         return minPitchToPlay;
     }
+
+    public float GetAttackSeconds() => attackSeconds;
+
+    public float GetReleaseSeconds() => releaseSeconds;
+
+    public bool IsMonophonic() => isMonophonic;
 
     public bool IsAutoLoop()
     {

@@ -99,7 +99,7 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
             if ((sustained & (1 << i)) != 0)
             {
                 int newPitch = current[i].GetPitch();
-                if (newPitch != playingPitch[i])
+                if (streamId[i] != 0 && newPitch != playingPitch[i])
                 {
                     streamId[i] = instrument.Play(current[i], i, 0f);   // same-string mute steals the old voice
                     playingPitch[i] = newPitch;
@@ -107,15 +107,33 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
             }
     }
 
-    // Newly pressed buttons: pluck the current chord's note.
+    // Newly pressed buttons: pluck the current chord's note. Monophonic instruments (bagpipes chanter)
+    // sound one note at a time — a new press stops the others and only the newest sounds.
     int rising = snap.NotesMask & ~lastMask;
-    for (int i = 0; i < liveButtons; i++)
-        if ((rising & (1 << i)) != 0)
+    if (instrument.IsMonophonic() && rising != 0)
+    {
+        for (int i = 0; i < liveButtons; i++)
+            if (streamId[i] != 0) { instrument.Stop(streamId[i]); streamId[i] = 0; playingPitch[i] = int.MinValue; }
+
+        int pick = -1;
+        for (int i = 0; i < liveButtons; i++) if ((rising & (1 << i)) != 0) pick = i;   // newest press wins
+        if (pick >= 0)
         {
-            streamId[i] = instrument.Play(current[i], i, 0f);
-            playingPitch[i] = current[i].GetPitch();
-            Console.WriteLine($"[play]   note {i}: {current[i].GetName()}");
+            streamId[pick] = instrument.Play(current[pick], pick, 0f);
+            playingPitch[pick] = current[pick].GetPitch();
+            Console.WriteLine($"[play]   note {pick}: {current[pick].GetName()} (mono)");
         }
+    }
+    else
+    {
+        for (int i = 0; i < liveButtons; i++)
+            if ((rising & (1 << i)) != 0)
+            {
+                streamId[i] = instrument.Play(current[i], i, 0f);
+                playingPitch[i] = current[i].GetPitch();
+                Console.WriteLine($"[play]   note {i}: {current[i].GetName()}");
+            }
+    }
     if (rising != 0) drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.GetKey());
 
     // Note-off: looping/sustained instruments stop when the button is released; plucked ones ring out.

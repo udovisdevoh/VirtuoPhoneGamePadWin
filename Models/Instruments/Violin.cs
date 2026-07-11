@@ -71,4 +71,15 @@ public class Violin : Instrument
     {
         return false;
     }
+
+    // Bowed string: short fades so notes don't click on attack or when released.
+    protected override float BuildAttackSeconds()
+    {
+        return 0.04f;
+    }
+
+    protected override float BuildReleaseSeconds()
+    {
+        return 0.08f;
+    }
 }

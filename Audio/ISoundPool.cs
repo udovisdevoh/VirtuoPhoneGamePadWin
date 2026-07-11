@@ -17,9 +17,15 @@ public interface ISoundPool
     /// <summary>Pre-decode a sample into memory. Returns a soundId (0 = failed / no sample).</summary>
     int Load(int resourceId, int priority);
 
-    /// <summary>Start a voice from a loaded sound. <paramref name="loop"/> != 0 loops forever.
-    /// Returns a streamId (0 = not playing).</summary>
-    int Play(int soundId, float leftVolume, float rightVolume, int priority, int loop, float rate);
+    /// <summary>Start a voice from a loaded sound. <paramref name="loop"/> != 0 loops forever;
+    /// <paramref name="attackSeconds"/>/<paramref name="releaseSeconds"/> add an optional fade in/out
+    /// (0 = none — the default hard edge). Returns a streamId (0 = not playing).</summary>
+    int Play(int soundId, float leftVolume, float rightVolume, int priority, int loop, float rate,
+             float attackSeconds, float releaseSeconds);
+
+    /// <summary>Convenience overload with no envelope (attack = release = 0).</summary>
+    int Play(int soundId, float leftVolume, float rightVolume, int priority, int loop, float rate)
+        => Play(soundId, leftVolume, rightVolume, priority, loop, rate, 0f, 0f);
 
     /// <summary>Stop and free a playing voice.</summary>
     void Stop(int streamId);

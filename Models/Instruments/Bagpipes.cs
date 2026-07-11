@@ -63,4 +63,10 @@ public class Bagpipes : Instrument
     {
         return true;
     }
+
+    // The chanter plays one melody note at a time (the drone is separate — "bi-phonic" overall).
+    protected override bool BuildIsMonophonic()
+    {
+        return true;
+    }
 }

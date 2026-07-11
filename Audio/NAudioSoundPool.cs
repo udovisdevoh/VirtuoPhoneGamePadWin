@@ -46,6 +46,11 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         public int StreamId;           // 0 = free; identifies the voice for Stop/SetRate/SetVolume
         public bool Active;
 
+        public float Gain = 1f;        // envelope gain
+        public float AttackInc;        // per-sample gain step for fade-in (0 = start at full)
+        public float ReleaseInc;       // per-sample gain step for fade-out (0 = hard stop)
+        public bool Releasing;
+
         public double Step => Pitch * RateRatio;
     }
 
@@ -177,7 +182,8 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         return new SoundBuffer { Mono = ResampleTo(mono, sourceRate, outputSampleRate), SampleRate = outputSampleRate };
     }
 
-    public int Play(int soundId, float leftVolume, float rightVolume, int priority, int loop, float rate)
+    public int Play(int soundId, float leftVolume, float rightVolume, int priority, int loop, float rate,
+                    float attackSeconds, float releaseSeconds)
     {
         if (!buffers.TryGetValue(soundId, out var buf) || buf.Mono.Length == 0) return 0;
 
@@ -207,6 +213,10 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
             slot.VolL = leftVolume;
             slot.VolR = rightVolume;
             slot.Loop = loop != 0;
+            slot.AttackInc = attackSeconds > 0f ? 1f / (attackSeconds * outputSampleRate) : 0f;
+            slot.ReleaseInc = releaseSeconds > 0f ? 1f / (releaseSeconds * outputSampleRate) : 0f;
+            slot.Gain = slot.AttackInc > 0f ? 0f : 1f;    // start silent only when there's an attack
+            slot.Releasing = false;
             slot.StreamId = streamId;
             slot.Active = true;
             return streamId;
@@ -218,7 +228,7 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         lock (gate)
         {
             for (int i = 0; i < slots.Length; i++)
-                if (slots[i].Active && slots[i].StreamId == streamId) { slots[i].Active = false; return; }
+                if (slots[i].Active && slots[i].StreamId == streamId) { slots[i].Releasing = true; return; }
         }
     }
 
@@ -331,6 +341,9 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
                     double pos = v.Position;
                     double step = v.Step;
                     float volL = v.VolL, volR = v.VolR;
+                    float gain = v.Gain;
+                    float attackInc = v.AttackInc, releaseInc = v.ReleaseInc;
+                    bool releasing = v.Releasing;
                     int o = offset;
                     bool ended = false;
 
@@ -341,13 +354,29 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
                             if (v.Loop) { pos %= srcLen; }
                             else { ended = true; break; }   // natural end (sample already faded to ~0)
                         }
-                        float s = SampleCubic(src, srcLen, pos);
+
+                        // Optional envelope: fade out while releasing (instant when no release is set),
+                        // else fade in to unity. With attack = release = 0 this stays a hard edge.
+                        if (releasing)
+                        {
+                            if (releaseInc <= 0f) { ended = true; break; }
+                            gain -= releaseInc;
+                            if (gain <= 0f) { ended = true; break; }
+                        }
+                        else if (gain < 1f && attackInc > 0f)
+                        {
+                            gain += attackInc;
+                            if (gain > 1f) gain = 1f;
+                        }
+
+                        float s = SampleCubic(src, srcLen, pos) * gain;
                         buffer[o++] += s * volL;
                         buffer[o++] += s * volR;
                         pos += step;
                     }
 
                     v.Position = pos;
+                    v.Gain = gain;
                     if (ended) v.Active = false;
                 }
             }
