@@ -214,7 +214,7 @@ How held buttons + joystick chord changes map onto engine voices:
   → `NAudioSoundPool.GlideRate` slews the voice's rate over that time. Only the **violin** sets it > 0.
 - **Drone instruments.** ✅ **sitar** (C# tampura) and **bagpipes** (A) add a sustained root that tracks the
   chord (the `Drone` class via `LoadDrone`/`setDrone`; lazy-harmonic + a `pitchAdjustSpeedMultiplicator`
-  glide — bagpipes uses a small **1.02** so its small per-chord steps glide instead of snapping). Harp,
+  per-tick glide — bagpipes uses **1.1** for a quick but audible portamento; sitar **1.2** ≈ near-instant). Harp,
   harpsichord, steel guitar have no drone. A **`BuildIsDroneFixed()`** flag exists (default false, currently
   **unused/dormant**) to hold a drone fixed against joystick chords — kept for a future instrument.
 

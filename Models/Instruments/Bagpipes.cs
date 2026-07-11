@@ -21,9 +21,10 @@ public class Bagpipes : Instrument
 
     protected override void LoadDrone()
     {
-        // pitchAdjustSpeedMultiplicator 1.02 (not 1.2): a slow, audible glide even for small root steps
-        // (the drone follows every chord, so its steps are small — 1.2 would snap in one tick).
-        setDrone(new Drone(Note.A, R.Raw.bagpipesdroneloopa, 1f, 1.02f, 0f));
+        // pitchAdjustSpeedMultiplicator = per-tick glide toward the target rate (ticks run at ~60 Hz).
+        // 1.1 ≈ a quick but still audible portamento (~85 ms worst case). Higher = snappier (the sitar uses
+        // 1.2 ≈ near-instant); lower = slower (1.02 was way too long since the drone can jump ~9 semitones).
+        setDrone(new Drone(Note.A, R.Raw.bagpipesdroneloopa, 1f, 1.1f, 0f));
     }
 
     protected override int BuildMinPitchToPlay()
