@@ -44,7 +44,7 @@ public class Synth : Instrument
 
     protected override bool BuildIsAutoLoop()
     {
-        return false;
+        return true;
     }
 
     protected override void LoadDrone()

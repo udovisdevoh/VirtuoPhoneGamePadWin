@@ -38,6 +38,7 @@ int lastMask = 0;
 int liveButtons = Math.Min(strings, input.NoteButtonCount);
 int[] playingPitch = new int[liveButtons];   // last pitch each button is sounding (for held-note swap)
 Array.Fill(playingPitch, int.MinValue);
+int[] streamId = new int[liveButtons];        // active stream per button (to stop looping notes on release)
 bool lastSelect = false;
 
 // Drone (bagpipes / sitar): a sustained root that follows the chord. Null for droneless instruments.
@@ -78,7 +79,7 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
         for (int i = 0; i < liveButtons; i++)
             if ((snap.NotesMask & (1 << i)) != 0)
             {
-                instrument.Play(current[i], i, 0f);
+                streamId[i] = instrument.Play(current[i], i, 0f);
                 playingPitch[i] = current[i].GetPitch();
             }
     }
@@ -100,7 +101,7 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
                 int newPitch = current[i].GetPitch();
                 if (newPitch != playingPitch[i])
                 {
-                    instrument.Play(current[i], i, 0f);   // same-string mute steals the old voice
+                    streamId[i] = instrument.Play(current[i], i, 0f);   // same-string mute steals the old voice
                     playingPitch[i] = newPitch;
                 }
             }
@@ -111,11 +112,24 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
     for (int i = 0; i < liveButtons; i++)
         if ((rising & (1 << i)) != 0)
         {
-            instrument.Play(current[i], i, 0f);
+            streamId[i] = instrument.Play(current[i], i, 0f);
             playingPitch[i] = current[i].GetPitch();
             Console.WriteLine($"[play]   note {i}: {current[i].GetName()}");
         }
     if (rising != 0) drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.GetKey());
+
+    // Note-off: looping/sustained instruments stop when the button is released; plucked ones ring out.
+    if (instrument.IsAutoLoop())
+    {
+        int falling = lastMask & ~snap.NotesMask;
+        for (int i = 0; i < liveButtons; i++)
+            if ((falling & (1 << i)) != 0 && streamId[i] != 0)
+            {
+                instrument.Stop(streamId[i]);
+                streamId[i] = 0;
+                playingPitch[i] = int.MinValue;
+            }
+    }
 
     lastMask = snap.NotesMask;
     if (drone != null && ++droneTick % 8 == 0) drone.OnTickUpdate(instrument.GetSoundPool());   // ~60 Hz glide
