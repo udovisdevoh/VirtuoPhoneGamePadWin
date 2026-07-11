@@ -31,7 +31,7 @@ public class Bagpipes : Instrument
 
     protected override int BuildStringCount()
     {
-        return 6;
+        return 8;
     }
 
     protected override bool BuildIsLazyHarmonicDrone()

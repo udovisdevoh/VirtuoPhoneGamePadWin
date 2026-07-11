@@ -75,38 +75,32 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         slots = new Voice[maxVoices];
         for (int i = 0; i < slots.Length; i++) slots[i] = new Voice();
 
-        // The whole sample bank is mono 44.1 kHz. Run the engine at 44.1 kHz so an unshifted note plays at
-        // a step of exactly 1.0 — bit-exact, zero rate conversion.
-        outputSampleRate = 44100;
+        // Output mode decides the engine sample rate. Default = SHARED so the Windows volume slider works,
+        // note attacks aren't affected by exclusive stream start/stop, and we coexist with other apps. Set
+        // VP_AUDIO_MODE=exclusive for a bit-exact, lowest-latency path that BYPASSES the Windows volume mixer
+        // and takes the device exclusively. VP_LATENCY_MS forces a buffer size.
+        bool exclusive = string.Equals(Environment.GetEnvironmentVariable("VP_AUDIO_MODE"), "exclusive",
+                                       StringComparison.OrdinalIgnoreCase);
+        bool forced = int.TryParse(Environment.GetEnvironmentVariable("VP_LATENCY_MS"), out int forcedMs) && forcedMs > 0;
+
+        // Engine rate: exclusive → native 44.1 kHz (bit-exact). Shared → the device's mix rate, so the OS does
+        // NO per-buffer resampling; instead we resample each 44.1 kHz sample to this rate ONCE, at load (see
+        // LoadBuffer). Either way an unshifted note plays at step 1.0.
+        outputSampleRate = exclusive ? 44100 : QueryDeviceMixRate(48000);
         var mixer = new Mixer(this, WaveFormat.CreateIeeeFloatWaveFormat(outputSampleRate, OutputChannels));
 
-        // Lowest output latency first: prefer exclusive (bit-exact, no OS resample/effects) with the
-        // smallest buffer the device accepts, stepping up only as needed; shared is the last resort.
-        (AudioClientShareMode share, int latencyMs, string label)[] candidates;
-        // Diagnostic override: set VP_LATENCY_MS to force a single buffer size (helps tell underruns from
-        // signal bugs). Otherwise probe smallest-first.
-        if (int.TryParse(Environment.GetEnvironmentVariable("VP_LATENCY_MS"), out int forcedMs) && forcedMs > 0)
+        var candidates = new List<(AudioClientShareMode share, int latencyMs, string label)>();
+        if (exclusive)
         {
-            candidates = new[]
-            {
-                (AudioClientShareMode.Exclusive, forcedMs, $"exclusive {forcedMs} ms (forced)"),
-                (AudioClientShareMode.Shared,    forcedMs, $"shared {forcedMs} ms (forced)"),
-            };
+            foreach (int ms in forced ? new[] { forcedMs } : new[] { 10, 15, 20 })
+                candidates.Add((AudioClientShareMode.Exclusive, ms, $"exclusive {ms} ms (bit-exact, no Windows volume)"));
+            candidates.Add((AudioClientShareMode.Shared, forced ? forcedMs : 20, "shared (fallback)"));
         }
         else
         {
-            // Prefer exclusive (bit-exact, no OS resample/effects), smallest reliable buffer first.
-            // 5 ms underran on the dev machine with NAudio's default render thread (audible pops); 10 ms is
-            // glitch-free and still punchy. To go below 10 ms reliably we'd need a custom WASAPI render
-            // thread registered with MMCSS "Pro Audio". Override with VP_LATENCY_MS to experiment.
-            candidates = new[]
-            {
-                (AudioClientShareMode.Exclusive, 10, "exclusive 10 ms (bit-exact)"),
-                (AudioClientShareMode.Exclusive, 15, "exclusive 15 ms (bit-exact)"),
-                (AudioClientShareMode.Exclusive, 25, "exclusive 25 ms (bit-exact)"),
-                (AudioClientShareMode.Shared,    15, "shared 15 ms (OS may resample)"),
-                (AudioClientShareMode.Shared,    40, "shared 40 ms (OS may resample)"),
-            };
+            foreach (int ms in forced ? new[] { forcedMs } : new[] { 10, 20, 30 })
+                candidates.Add((AudioClientShareMode.Shared, ms, $"shared {ms} ms (Windows volume works)"));
+            candidates.Add((AudioClientShareMode.Exclusive, forced ? forcedMs : 10, "exclusive (fallback)"));
         }
 
         IWavePlayer? chosen = null;
@@ -161,18 +155,26 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
             for (int i = 0; i < read; i++) interleaved.Add(tmp[i]);
 
         // Samples are mono; if a stereo file ever appears, average to mono (no filtering of mono content).
+        float[] mono;
         if (channels == 1)
-            return new SoundBuffer { Mono = interleaved.ToArray(), SampleRate = sourceRate };
-
-        int frames = channels > 0 ? interleaved.Count / channels : 0;
-        float[] mono = new float[frames];
-        for (int f = 0; f < frames; f++)
         {
-            float s = 0f;
-            for (int c = 0; c < channels; c++) s += interleaved[f * channels + c];
-            mono[f] = s / channels;
+            mono = interleaved.ToArray();
         }
-        return new SoundBuffer { Mono = mono, SampleRate = sourceRate };
+        else
+        {
+            int frames = channels > 0 ? interleaved.Count / channels : 0;
+            mono = new float[frames];
+            for (int f = 0; f < frames; f++)
+            {
+                float s = 0f;
+                for (int c = 0; c < channels; c++) s += interleaved[f * channels + c];
+                mono[f] = s / channels;
+            }
+        }
+
+        // Resample ONCE here, in RAM, to the engine/output rate — so playback never resamples (only genuine
+        // pitch shifts interpolate) and, in shared mode, the OS doesn't resample the mix on every buffer.
+        return new SoundBuffer { Mono = ResampleTo(mono, sourceRate, outputSampleRate), SampleRate = outputSampleRate };
     }
 
     public int Play(int soundId, float leftVolume, float rightVolume, int priority, int loop, float rate)
@@ -262,6 +264,30 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         float c2 = p0 - 2.5f * p1 + 2f * p2 - 0.5f * p3;
         float c3 = 0.5f * (p3 - p0) + 1.5f * (p1 - p2);
         return ((c3 * t + c2) * t + c1) * t + p1;
+    }
+
+    /// <summary>Cubic-resample a mono buffer from srcRate to dstRate. Done once, at load — never at playback.</summary>
+    private static float[] ResampleTo(float[] src, int srcRate, int dstRate)
+    {
+        if (srcRate == dstRate || src.Length == 0) return src;
+        int dstLen = (int)Math.Round(src.Length * (double)dstRate / srcRate);
+        var dst = new float[dstLen];
+        double step = (double)srcRate / dstRate;    // source samples advanced per output sample
+        double pos = 0;
+        for (int i = 0; i < dstLen; i++) { dst[i] = SampleCubic(src, src.Length, pos); pos += step; }
+        return dst;
+    }
+
+    /// <summary>The shared-mode mix sample rate of the default render device (so we can match it, no OS resample).</summary>
+    private static int QueryDeviceMixRate(int fallback)
+    {
+        try
+        {
+            using var en = new MMDeviceEnumerator();
+            using var dev = en.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+            return dev.AudioClient.MixFormat.SampleRate;
+        }
+        catch { return fallback; }
     }
 
     /// <summary>Transparent below ~0.8, softly compresses peaks up to (but never past) 1.0.</summary>

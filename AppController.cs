@@ -9,7 +9,7 @@ namespace VirtuoPhone;
 
 public class AppController
 {
-    public const int STRING_COUNT = 6;
+    public const int STRING_COUNT = 8;
     private static AppController instance = new AppController();
     public static AppController GetAppController() => instance;
     private Instrument? instrument;

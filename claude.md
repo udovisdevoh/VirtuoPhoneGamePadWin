@@ -62,11 +62,17 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
 - **Approach:** build a **vertical slice first** — one instrument + one hard-coded preset + the real F500 → sound —
   and measure end-to-end latency before adding breadth.
 - **Audio (built):** **`NAudioSoundPool`** = NAudio + NVorbis, behind **`ISoundPool`** (swappable via
-  `AudioBackend`). Samples are **mono 44.1 kHz**, so the engine runs at **44.1 kHz** and prefers **WASAPI
-  exclusive** (**~10 ms**, bit-exact — no OS resample or effects), falling back to shared. Unshifted notes
-  are sample-accurate; only genuine pitch shifts interpolate (**cubic / Catmull-Rom**). Mix bus = per-poly
-  headroom + a **soft-knee** limiter (no hard clipping). **Do not add resampling/filtering to the sample
-  path, and do not add attack/release envelopes** — they smear the pluck transient (the user rejected both).
+  `AudioBackend`). Source samples are **mono 44.1 kHz**. The engine runs at the **output/device rate** and
+  each sample is **resampled once, in RAM, at load** (cubic) to that rate — so the **playback path never
+  resamples** (only genuine pitch shifts interpolate, **cubic / Catmull-Rom**) and, in shared mode, the OS
+  doesn't resample the mix every buffer. An unshifted note then plays at step 1.0.
+  **Output defaults to WASAPI _shared_ at the device mix rate** so the **Windows volume slider works**,
+  attacks aren't affected by exclusive stream start/stop, and other apps' audio coexists. Set
+  **`VP_AUDIO_MODE=exclusive`** for **44.1 kHz bit-exact**, lowest latency — but it **bypasses the Windows
+  volume mixer** and takes the device exclusively. Mix bus = per-poly headroom + a **soft-knee** limiter (no
+  hard clipping). **Do not resample/filter on the _playback_ path, and do not add attack/release envelopes**
+  (they smear the pluck transient — the user rejected both). Resampling **once at load** is the sanctioned
+  way to match the device rate.
 - **Audio real-time rules (learned the hard way):** the mixer runs on the WASAPI render thread — keep it
   **allocation-free** (fixed voice-slot pool, no per-buffer enumerator) or the GC pauses it into underruns.
   Low-latency "pops" were **buffer underruns**, not signal bugs: **5 ms underran** with NAudio's default
@@ -126,6 +132,9 @@ Read these before touching audio code — they are the load-bearing invariants o
   - Builds a `MultiSampleSet[128]` indexed by MIDI pitch; **`InterpolateBlankSamples()`** fills empty pitches
     from the nearest lower sample so every pitch is playable from a sparse recorded set.
   - Polyphony = `stringCount * 2`.
+  - **`stringCount` = the number of note buttons = 8 for every instrument** (like a piano's 8-note layout);
+    chords are voiced / `StringExpander`-ed to 8 notes. The old per-instrument counts (6, 4, 17…) were an
+    Android-app vestige and have been unified to 8 — always use 8.
   - Behavior is declared by overriding abstract **`Build*()`** flags:
     `BuildStringCount`, `BuildMinPitchToPlay`, `BuildIsMuteOnChangeFretSameString`, `BuildIsAutoLoop`,
     `BuildIsAutoLoopKeepNoteUntilNewNote`, `BuildIsPitchBend`, `LoadDrone`,

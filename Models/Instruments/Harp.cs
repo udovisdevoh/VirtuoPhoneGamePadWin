@@ -34,7 +34,7 @@ public class Harp : Instrument
 
     protected override int BuildStringCount()
     {
-        return 17;
+        return 8;
     }
 
     protected override bool BuildIsMuteOnChangeFretSameString()

@@ -34,7 +34,7 @@ public class Violin : Instrument
 
     protected override int BuildStringCount()
     {
-        return 4;
+        return 8;
     }
 
     protected override bool BuildIsMuteOnChangeFretSameString()
