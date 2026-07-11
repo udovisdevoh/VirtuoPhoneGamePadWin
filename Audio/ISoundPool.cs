@@ -36,9 +36,16 @@ public interface ISoundPool
     /// <summary>Update a playing voice's playback rate (pitch), instantly.</summary>
     void SetRate(int streamId, float rate);
 
-    /// <summary>Smoothly multiply a playing voice's rate by <paramref name="rateFactor"/> over
-    /// <paramref name="glideSeconds"/> (0 = instant) — a portamento/glissando on the existing voice.</summary>
+    /// <summary>Smoothly glide a playing voice to <c>baseRate × <paramref name="rateFactor"/></c> over
+    /// <paramref name="glideSeconds"/> (0 = instant), where <c>baseRate</c> is the rate the voice was
+    /// started at. Anchoring to the ORIGINAL rate (not the current, possibly mid-glide one) keeps chained
+    /// glides from drifting/compounding. Used for note portamento/glissando.</summary>
     void GlideRate(int streamId, float rateFactor, float glideSeconds);
+
+    /// <summary>Smoothly glide a playing voice from its current rate to the absolute
+    /// <paramref name="targetRate"/> over <paramref name="glideSeconds"/> (0 = instant). Used by the drone,
+    /// which knows the exact target rate for each chord root.</summary>
+    void GlideToRate(int streamId, float targetRate, float glideSeconds);
 
     /// <summary>Release the engine and all resources.</summary>
     void Release();

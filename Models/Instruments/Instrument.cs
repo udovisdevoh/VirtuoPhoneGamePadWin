@@ -279,11 +279,13 @@ public abstract class Instrument : IEnumerable<Sample>
 
     public float GetGlissandoSeconds() => glissandoSeconds;
 
-    /// <summary>Glissando a held voice from one pitch to another (portamento) instead of re-attacking.</summary>
-    public void GlidePitch(int streamId, int fromPitch, int toPitch, float glideSeconds)
+    /// <summary>Glissando a held voice to <paramref name="toPitch"/> (portamento) instead of re-attacking.
+    /// <paramref name="basePitch"/> is the pitch the voice was STRUCK at; the factor is taken relative to it
+    /// (matching the engine's base-anchored glide) so chained chord changes don't drift.</summary>
+    public void GlidePitch(int streamId, int basePitch, int toPitch, float glideSeconds)
     {
         if (streamId <= 0) return;
-        float factor = (float)Math.Pow(2.0, (toPitch - fromPitch) / 12.0);
+        float factor = (float)Math.Pow(2.0, (toPitch - basePitch) / 12.0);
         soundPool.GlideRate(streamId, factor, glideSeconds);
     }
 

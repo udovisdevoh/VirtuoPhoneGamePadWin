@@ -19,6 +19,7 @@ internal sealed class VoiceSampleProvider : ISampleProvider
     private readonly bool loop;
     private readonly float attackInc, releaseInc;
     private readonly int outputSampleRate;
+    private readonly double baseRate;      // the rate the voice was struck at — the glissando anchor (see GlideRate)
 
     private double pos;
     private double pitch = 1.0, targetPitch = 1.0, pitchGlideInc;
@@ -41,6 +42,7 @@ internal sealed class VoiceSampleProvider : ISampleProvider
         volL = leftVolume;
         volR = rightVolume;
         pitch = targetPitch = rate <= 0f ? 1.0 : rate;
+        baseRate = pitch;
         attackInc = attackSeconds > 0f ? 1f / (attackSeconds * outputRate) : 0f;
         releaseInc = releaseSeconds > 0f ? 1f / (releaseSeconds * outputRate) : 0f;
         gain = attackInc > 0f ? 0f : 1f;    // start silent only when there's an attack
@@ -55,10 +57,17 @@ internal sealed class VoiceSampleProvider : ISampleProvider
         pitchGlideInc = 0;
     }
 
-    /// <summary>Glide (portamento) the rate by <paramref name="factor"/> over <paramref name="seconds"/>.</summary>
-    public void GlideRate(float factor, float seconds)
+    /// <summary>Glide (portamento) to <c>baseRate × factor</c> over <paramref name="seconds"/> — anchored to
+    /// the rate the voice was STRUCK at, so chained glides re-target from a fixed base and never drift
+    /// (e.g. a note going E→F→E returns exactly to E).</summary>
+    public void GlideRate(float factor, float seconds) => StartGlide(baseRate * factor, seconds);
+
+    /// <summary>Glide from the current rate to an absolute <paramref name="targetRate"/> (used by the drone).</summary>
+    public void GlideToRate(float targetRate, float seconds)
+        => StartGlide(targetRate <= 0f ? pitch : targetRate, seconds);
+
+    private void StartGlide(double target, float seconds)
     {
-        double target = pitch * factor;
         if (seconds <= 0f) { pitch = target; pitchGlideInc = 0; }
         else pitchGlideInc = (target - pitch) / (seconds * outputSampleRate);
         targetPitch = target;

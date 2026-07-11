@@ -15,5 +15,6 @@ public class DummySoundPool : ISoundPool
     public void SetVolume(int streamId, float left, float right) { }
     public void SetRate(int streamId, float rate) { }
     public void GlideRate(int streamId, float rateFactor, float glideSeconds) { }
+    public void GlideToRate(int streamId, float targetRate, float glideSeconds) { }
     public void Release() { }
 }

@@ -69,4 +69,11 @@ public class Sitar : Instrument
     {
         return false;
     }
+
+    // Plucked string with a characteristic meend: glide (portamento) to the new note on chord changes while
+    // a button is held, instead of re-plucking — like the violin.
+    protected override float BuildGlissandoSeconds()
+    {
+        return 0.12f;
+    }
 }

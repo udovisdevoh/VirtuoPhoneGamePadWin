@@ -101,6 +101,8 @@ int liveButtons = Math.Min(strings, input.NoteButtonCount);
 int[] playingPitch = new int[liveButtons];   // last pitch each button is sounding (polyphonic held-note swap)
 Array.Fill(playingPitch, int.MinValue);
 int[] streamId = new int[liveButtons];        // active stream per button (to stop looping notes on release)
+int[] basePitch = new int[liveButtons];       // pitch each button's current voice was STRUCK at (glissando anchor)
+Array.Fill(basePitch, int.MinValue);
 bool lastSelect = false;
 
 // Monophonic instruments (bagpipes chanter) use last-note priority with fall-back to still-held notes.
@@ -147,6 +149,7 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
 
         Array.Fill(playingPitch, int.MinValue);
         Array.Fill(streamId, 0);
+        Array.Fill(basePitch, int.MinValue);
         heldMono.Clear();
         monoButton = -1;
         monoStreamId = 0;
@@ -165,6 +168,7 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
                 {
                     streamId[i] = instrument.Play(current.Voicing[i], i, 0f);
                     playingPitch[i] = current.Voicing[i];
+                    basePitch[i] = current.Voicing[i];
                 }
         }
     }
@@ -201,7 +205,7 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
     }
     else
     {
-        // Held-note swap on chord change: re-voice every still-held, still-sounding button whose note changed.
+        // Held-note swap on chord change: re-voice every still-held, still-sounding button.
         if (chordChanged)
         {
             float gliss = instrument.GetGlissandoSeconds();
@@ -210,13 +214,24 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
                 if ((sustained & (1 << i)) != 0 && streamId[i] != 0)
                 {
                     int newPitch = current.Voicing[i];
-                    if (newPitch != playingPitch[i])
+                    if (gliss > 0f)
                     {
-                        if (gliss > 0f)
-                            instrument.GlidePitch(streamId[i], playingPitch[i], newPitch, gliss);   // portamento
-                        else
-                            streamId[i] = instrument.Play(newPitch, i, 0f);   // re-attack (same-string mute steals old)
+                        // Portamento (violin, sitar): glide the ringing voice to the new note. Anchor on the
+                        // pitch it was STRUCK at (basePitch), not the previous target, so E→F→E can't drift.
+                        if (newPitch != playingPitch[i])
+                        {
+                            instrument.GlidePitch(streamId[i], basePitch[i], newPitch, gliss);
+                            playingPitch[i] = newPitch;
+                        }
+                    }
+                    else
+                    {
+                        // No portamento (piano, harp…): mute the previous note and re-strike this button on
+                        // the new chord — always, even when the pitch is unchanged.
+                        instrument.Stop(streamId[i]);
+                        streamId[i] = instrument.Play(newPitch, i, 0f);
                         playingPitch[i] = newPitch;
+                        basePitch[i] = newPitch;
                     }
                 }
         }
@@ -227,6 +242,7 @@ while (seconds == 0 || sw.Elapsed.TotalSeconds < seconds)
             {
                 streamId[i] = instrument.Play(current.Voicing[i], i, 0f);
                 playingPitch[i] = current.Voicing[i];
+                basePitch[i] = current.Voicing[i];
                 Console.WriteLine($"[play]   note {i}: {new Note(current.Voicing[i]).GetName()}");
             }
 

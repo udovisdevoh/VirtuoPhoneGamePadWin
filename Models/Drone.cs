@@ -102,7 +102,7 @@ public class Drone
 
     public void OnTickUpdate(ISoundPool soundPool)
     {
-        AdjustPicth(soundPool);
+        // Pitch is now glided sample-accurately by the voice itself (see SetPitch); only the volume decays here.
         AutoAdjustVolumeDecreaseWithTime(soundPool);
     }
 
@@ -115,39 +115,6 @@ public class Drone
             if (streamId > 0)
             {
                 soundPool.SetVolume(streamId, volume, volume);
-            }
-        }
-    }
-
-    private void AdjustPicth(ISoundPool soundPool)
-    {
-        if (rate < targetRate && pitchAdjustSpeedMultiplicator > 0f)
-        {
-            rate *= pitchAdjustSpeedMultiplicator;
-
-            if (rate > targetRate)
-            {
-                rate = targetRate;
-            }
-
-            if (streamId > 0)
-            {
-                soundPool.SetRate(streamId, rate);
-            }
-
-        }
-        else if (rate > targetRate && pitchAdjustSpeedMultiplicator > 0f)
-        {
-            rate /= pitchAdjustSpeedMultiplicator;
-
-            if (rate < targetRate)
-            {
-                rate = targetRate;
-            }
-
-            if (streamId > 0)
-            {
-                soundPool.SetRate(streamId, rate);
             }
         }
     }
@@ -240,15 +207,26 @@ public class Drone
 
     public void SetPitch(ISoundPool soundPool, int desiredPitch)
     {
+        float previousRate = rate;
         targetRate = GetSample().GetPitchMultiplicator(desiredPitch, 0f);
-        if (pitchAdjustSpeedMultiplicator <= 0f)
+        rate = targetRate;   // logical current rate; the voice glides to it below
+
+        if (streamId <= 0) return;
+
+        if (pitchAdjustSpeedMultiplicator <= 0f || previousRate <= 0f)
         {
-            rate = targetRate;
-            if (streamId > 0)
-            {
-                soundPool.SetRate(streamId, rate);
-            }
+            soundPool.SetRate(streamId, targetRate);   // snap
+            return;
         }
+
+        // Smooth, sample-accurate portamento to the new root. (The old approach stepped the rate once per
+        // ~60 Hz tick — at a 1.1 multiplier that jumped ~1.6 semitones per tick and sounded stepped.) Keep the
+        // SAME overall glide the per-tick multiplier used to give: numTicks = |ln(ratio)| / |ln(multiplier)|.
+        const float tickSeconds = 1f / 60f;
+        double lnStep = Math.Abs(Math.Log(pitchAdjustSpeedMultiplicator));
+        double lnRatio = Math.Abs(Math.Log(targetRate / previousRate));
+        float glideSeconds = lnStep > 0 ? (float)(lnRatio / lnStep) * tickSeconds : 0f;
+        soundPool.GlideToRate(streamId, targetRate, glideSeconds);
     }
 
     public void Play(ISoundPool soundPool, int desiredPitch)

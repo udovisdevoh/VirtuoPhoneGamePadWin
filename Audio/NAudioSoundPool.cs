@@ -197,6 +197,11 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         if (voices.TryGetValue(streamId, out var v)) v.GlideRate(rateFactor, glideSeconds);
     }
 
+    public void GlideToRate(int streamId, float targetRate, float glideSeconds)
+    {
+        if (voices.TryGetValue(streamId, out var v)) v.GlideToRate(targetRate, glideSeconds);
+    }
+
     public void Release() => Dispose();
 
     public void Dispose()

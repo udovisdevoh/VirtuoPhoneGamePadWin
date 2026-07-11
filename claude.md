@@ -199,8 +199,10 @@ Must be highly responsive: crisp execution, rapid directional inputs, low-latenc
 How held buttons + joystick chord changes map onto engine voices:
 - **Per-button polyphony.** ✅ Each action button owns its own voice; re-pressing/swapping steals *that
   button's* voice (via the instrument's same-string mute). Polyphony is per button, not global.
-- **Chord change while holding.** ✅ When the joystick changes the chord, each held button whose note changed
-  is re-voiced immediately (no re-press); unchanged notes keep ringing.
+- **Chord change while holding.** ✅ When the joystick changes the chord, each held button is re-voiced
+  immediately (no re-press). **Portamento** instruments (violin, sitar) glide the ringing voice to the new
+  note; **all others** (piano, harp…) mute the previous note and re-strike the button on the new chord —
+  always, even if that button's pitch is unchanged.
 - **Per-instrument note-off.** ✅ On release, **looping/sustained** instruments (`IsAutoLoop()`: violin,
   bagpipes) **stop**; **plucked** ones (guitar, piano, harp, harpsichord, sitar, jew's-harp, synth) ring out.
 - **Monophonic instruments** (`IsMonophonic()`: bagpipes chanter). ✅ **Last-note priority with fall-back**:
@@ -211,12 +213,16 @@ How held buttons + joystick chord changes map onto engine voices:
   This is **opt-in per instrument** — do not apply an envelope globally (an always-on envelope was rejected).
 - **Optional glissando (portamento).** ✅ `Instrument.BuildGlissandoSeconds()` (default 0 = re-attack) makes
   a **held** voice **glide** to the new note on a chord change instead of re-triggering — `Instrument.GlidePitch`
-  → `NAudioSoundPool.GlideRate` slews the voice's rate over that time. Only the **violin** sets it > 0.
+  → `ISoundPool.GlideRate` slews the voice's rate over that time. The **violin** and the **sitar** (meend) set
+  it > 0. The glide is **anchored to the pitch the voice was struck at** (`VoiceSampleProvider.baseRate`), not
+  the previous target, so chained changes (E→F→E) can't drift.
 - **Drone instruments.** ✅ **sitar** (C# tampura) and **bagpipes** (A) add a sustained root that tracks the
-  chord (the `Drone` class via `LoadDrone`/`setDrone`; lazy-harmonic + a `pitchAdjustSpeedMultiplicator`
-  per-tick glide — bagpipes uses **1.1** for a quick but audible portamento; sitar **1.2** ≈ near-instant). Harp,
-  harpsichord, steel guitar have no drone. A **`BuildIsDroneFixed()`** flag exists (default false, currently
-  **unused/dormant**) to hold a drone fixed against joystick chords — kept for a future instrument.
+  chord (the `Drone` class via `LoadDrone`/`setDrone`; lazy-harmonic). On a chord change the drone **glides
+  sample-accurately** to the new root via `ISoundPool.GlideToRate` (smooth — an earlier ~60 Hz per-tick
+  stepping sounded stepped). The legacy `pitchAdjustSpeedMultiplicator` now just sets the glide **duration**
+  (bagpipes **1.1** ≈ quick; sitar **1.2** ≈ near-instant). Harp, harpsichord, steel guitar have no drone. A
+  **`BuildIsDroneFixed()`** flag exists (default false, **unused/dormant**) to hold a drone fixed against
+  joystick chords — kept for a future instrument.
 
 ---
 

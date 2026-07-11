@@ -18,5 +18,26 @@ public enum ChordType
     pentatonic_minor,
     pentatonic_major,
     pentatonic_minor_blues,
-    pentatonic_major_blues
+    pentatonic_major_blues,
+#warning ajouter ces types d'accord / gamme    
+    pentatonic_mixolydian,
+    pentatonic_flat5,
+    pentatonic_scottish,
+    sus4shap,
+    sus2flat,
+    ionian,
+    dorian,
+    phrygian,
+    lydian,
+    mixolydian,
+    aeolian,
+    locrian,
+    harmonic_minor,
+    phrygian_dominant,
+    melodic_minor,
+    mixolydian_b6,
+    lydian_dominant,
+    double_harmonic,
+    double_harmonic_major,
+    dorian_sharp_4
 }
