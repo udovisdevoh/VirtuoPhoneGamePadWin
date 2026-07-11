@@ -21,7 +21,9 @@ public class Bagpipes : Instrument
 
     protected override void LoadDrone()
     {
-        setDrone(new Drone(Note.A, R.Raw.bagpipesdroneloopa, 1f, 1.2f, 0f));
+        // pitchAdjustSpeedMultiplicator 1.02 (not 1.2): a slow, audible glide even for small root steps
+        // (the drone follows every chord, so its steps are small — 1.2 would snap in one tick).
+        setDrone(new Drone(Note.A, R.Raw.bagpipesdroneloopa, 1f, 1.02f, 0f));
     }
 
     protected override int BuildMinPitchToPlay()

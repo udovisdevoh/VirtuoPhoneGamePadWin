@@ -181,25 +181,24 @@ Must be highly responsive: crisp execution, rapid directional inputs, low-latenc
 - **Remappable controls:** a **remap menu** lets every action be rebound to a controller button/axis **or a
   keyboard key** (keyboard and gamepad are interchangeable input sources), persisted in the JSON config.
 
-### Voice management & note lifecycle (planned)
+### Voice management & note lifecycle (implemented in the play harness `Program.cs`)
 How held buttons + joystick chord changes map onto engine voices:
-- **Per-button polyphony.** Each of the 8 action buttons owns its own voice; re-pressing a button steals
-  (replaces) *that button's* previous voice — polyphony is tracked **per button**, not globally.
-  (Generalizes today's `isMuteOnChangeFretSameString` per-string mute into a per-button rule.)
-- **Chord change while holding.** If the joystick changes the active chord while buttons are held, then for
-  **each held button whose note changed**, steal that button's voice and play the new note; buttons whose
-  note is unchanged keep ringing untouched. (This is the "hold + move joystick" swap above, resolved per button.)
-- **Per-instrument note-off.** On button release, some instruments stop the note, others let it ring — this
-  is defined per instrument in the original source (see the feature flags in §5). Wire release to each
-  instrument's configured behavior.
-- **Polyphonic vs monophonic instruments.** Not every instrument is polyphonic — the **bagpipes** play one
-  melody voice at a time (monophonic chanter) no matter how many buttons are held. Mono-vs-poly follows the
-  instrument's feature flags / the original source's playing logic (bagpipes: `isAutoLoop` +
-  `isAutoLoopKeepNoteUntilNewNote` — a single sustained looping note replaced on each new press).
-- **Drone instruments.** Some instruments add a **drone** — **bagpipes** (A) and **sitar** (C# tampura) — a
-  sustained bass that tracks the chord root (the `Drone` class via `LoadDrone`/`setDrone`, with
-  lazy-harmonic / minimize-pitch-shift options). The drone is independent of the per-button note voices.
-  (Harp, harpsichord, steel guitar have no drone.)
+- **Per-button polyphony.** ✅ Each action button owns its own voice; re-pressing/swapping steals *that
+  button's* voice (via the instrument's same-string mute). Polyphony is per button, not global.
+- **Chord change while holding.** ✅ When the joystick changes the chord, each held button whose note changed
+  is re-voiced immediately (no re-press); unchanged notes keep ringing.
+- **Per-instrument note-off.** ✅ On release, **looping/sustained** instruments (`IsAutoLoop()`: violin,
+  bagpipes) **stop**; **plucked** ones (guitar, piano, harp, harpsichord, sitar, jew's-harp, synth) ring out.
+- **Monophonic instruments** (`IsMonophonic()`: bagpipes chanter). ✅ **Last-note priority with fall-back**:
+  a new press replaces the sounding note; releasing it falls back to the newest still-held button (a held
+  stack in the harness). The drone is separate, so bagpipes is effectively "bi-phonic".
+- **Optional per-voice envelope.** ✅ `Instrument.BuildAttackSeconds()`/`BuildReleaseSeconds()` (default 0 =
+  hard edge) drive a per-voice attack/release fade in `NAudioSoundPool`. Only the **violin** sets them > 0.
+  This is **opt-in per instrument** — do not apply an envelope globally (an always-on envelope was rejected).
+- **Drone instruments.** ✅ **bagpipes** (A) and **sitar** (C# tampura) add a sustained root that tracks the
+  chord (the `Drone` class via `LoadDrone`/`setDrone`; lazy-harmonic + a `pitchAdjustSpeedMultiplicator`
+  glide — bagpipes uses a small **1.02** so its small per-chord steps glide instead of snapping). Harp,
+  harpsichord, steel guitar have no drone.
 
 ---
 
@@ -290,10 +289,10 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
    (root + `ChordType`), and rename / add / remove / duplicate / select presets — then save and reload them.
    The model already has the primitives (`GuitarPreset.SetChord/ReplaceChord/RemoveChord/Add/RegenerateChords`,
    `Chord.SetFundamental`); this adds the authoring workflow (its editor UI lands with the UI work below).
-7. **Interaction logic & voice management:** joystick-cell selection, **per-button polyphony**,
-   **monophonic instruments** (e.g. bagpipes) and **drones** (bagpipes, sitar), held-note **swap on chord
-   change** (steal only the buttons whose note changed), **per-instrument note-off** (stop-on-release vs.
-   let-ring), double-tap dash, Start modulation. See §6 "Voice management".
+7. **Interaction logic & voice management:** ✅ done in the play harness — per-button polyphony, held-note
+   swap on chord change, per-instrument note-off, monophony (last-note priority + fall-back), optional
+   violin envelope, drones (bagpipes/sitar), and Select = change instrument. **Remaining:** the double-tap
+   "dash" alternate presets and the **Start-button modulation** (transpose / force-minor). See §6.
 8. **UI:** replace the console with a real UI showing the active cell, instrument, and note layout,
    and hosting the preset editor from step 6.
 9. **Configurable audio (eventually):** expose the engine's currently baked-in choices as user settings
