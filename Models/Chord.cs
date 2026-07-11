@@ -311,6 +311,38 @@ public class Chord : IEnumerable<Note>
                 noteList.Add(new Note(Note.G, 4));
                 noteList.Add(new Note(Note.A, 4));
                 break;
+            case ChordType.pentatonic_minor_flat5:
+                noteList.Add(new Note(Note.A, 3));
+                noteList.Add(new Note(Note.C, 4));
+                noteList.Add(new Note(Note.D, 4));
+                noteList.Add(new Note(Note.EFlat, 4));
+                noteList.Add(new Note(Note.G, 4));
+                noteList.Add(new Note(Note.A, 4));
+                break;
+            case ChordType.pentatonic_mixolydian:
+                noteList.Add(new Note(Note.A, 3));
+                noteList.Add(new Note(Note.CSharp, 4));
+                noteList.Add(new Note(Note.D, 4));
+                noteList.Add(new Note(Note.E, 4));
+                noteList.Add(new Note(Note.G, 4));
+                noteList.Add(new Note(Note.A, 4));
+                break;
+            case ChordType.pentatonic_suspended:
+                noteList.Add(new Note(Note.A, 3));
+                noteList.Add(new Note(Note.B, 4));
+                noteList.Add(new Note(Note.D, 4));
+                noteList.Add(new Note(Note.E, 4));
+                noteList.Add(new Note(Note.G, 4));
+                noteList.Add(new Note(Note.A, 4));
+                break;
+            case ChordType.pentatonic_scottish:
+                noteList.Add(new Note(Note.A, 3));
+                noteList.Add(new Note(Note.B, 4));
+                noteList.Add(new Note(Note.D, 4));
+                noteList.Add(new Note(Note.E, 4));
+                noteList.Add(new Note(Note.FSharp, 4));
+                noteList.Add(new Note(Note.A, 4));
+                break;
             case ChordType.pentatonic_minor_blues:
                 noteList.Add(new Note(Note.A, 3));
                 noteList.Add(new Note(Note.C, 4));
@@ -578,6 +610,14 @@ public class Chord : IEnumerable<Note>
                 return 33;
             case ChordType.pentatonic_minor_blues:
                 return 34;
+            case ChordType.pentatonic_mixolydian:
+                return 35;
+            case ChordType.pentatonic_minor_flat5:
+                return 36;
+            case ChordType.pentatonic_suspended:
+                return 37;
+            case ChordType.pentatonic_scottish:
+                return 38;
             default:
                 return -1;
         }
@@ -657,6 +697,14 @@ public class Chord : IEnumerable<Note>
                 return ChordType.pentatonic_minor;
             case 34:
                 return ChordType.pentatonic_minor_blues;
+            case 35:
+                return ChordType.pentatonic_mixolydian;
+            case 36:
+                return ChordType.pentatonic_minor_flat5;
+            case 37:
+                return ChordType.pentatonic_suspended;
+            case 38:
+                return ChordType.pentatonic_scottish;
             default:
                 return ChordType.maj;
         }
