@@ -71,10 +71,4 @@ public class Bagpipes : Instrument
     {
         return true;
     }
-
-    // Real bagpipes hold a fixed drone (A): it ignores the joystick chords and only moves on modulation.
-    protected override bool BuildIsDroneFixed()
-    {
-        return true;
-    }
 }

@@ -195,11 +195,11 @@ How held buttons + joystick chord changes map onto engine voices:
 - **Optional per-voice envelope.** ✅ `Instrument.BuildAttackSeconds()`/`BuildReleaseSeconds()` (default 0 =
   hard edge) drive a per-voice attack/release fade in `NAudioSoundPool`. Only the **violin** sets them > 0.
   This is **opt-in per instrument** — do not apply an envelope globally (an always-on envelope was rejected).
-- **Drone instruments.** ✅ **sitar** (C# tampura) and **bagpipes** (A) add a sustained root (the `Drone`
-  class via `LoadDrone`/`setDrone`). The **sitar** drone *tracks the chord* (lazy-harmonic, glides via
-  `pitchAdjustSpeedMultiplicator`); the **bagpipes** drone is **fixed** (`BuildIsDroneFixed()` = true) — like
-  a real chanter it ignores joystick chords and only moves on modulation. Harp, harpsichord, steel guitar
-  have no drone.
+- **Drone instruments.** ✅ **sitar** (C# tampura) and **bagpipes** (A) add a sustained root that tracks the
+  chord (the `Drone` class via `LoadDrone`/`setDrone`; lazy-harmonic + a `pitchAdjustSpeedMultiplicator`
+  glide — bagpipes uses a small **1.02** so its small per-chord steps glide instead of snapping). Harp,
+  harpsichord, steel guitar have no drone. A **`BuildIsDroneFixed()`** flag exists (default false, currently
+  **unused/dormant**) to hold a drone fixed against joystick chords — kept for a future instrument.
 
 ---
 
