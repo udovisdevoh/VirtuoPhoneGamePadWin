@@ -6,6 +6,7 @@ using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using NAudio.Vorbis;
+using VirtuoPhone.Config;
 
 namespace VirtuoPhone;
 
@@ -38,24 +39,33 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
     private readonly string sampleDir;
     private readonly MixingSampleProvider mixer;
     private readonly IWavePlayer output;
+    private readonly MMDevice outputDevice;
     private readonly object voicesLock = new();
 
-    public NAudioSoundPool(int polyphony)
+    public NAudioSoundPool(int polyphony, AudioSettings settings)
     {
         sampleDir = Path.Combine(AppContext.BaseDirectory, "res", "raw");
         maxVoices = Math.Max(1, polyphony);
 
-        // Output mode: default SHARED (Windows volume works); VP_AUDIO_MODE=exclusive for bit-exact/no-OS-mix.
-        bool exclusive = string.Equals(Environment.GetEnvironmentVariable("VP_AUDIO_MODE"), "exclusive",
-                                       StringComparison.OrdinalIgnoreCase);
-        bool forced = int.TryParse(Environment.GetEnvironmentVariable("VP_LATENCY_MS"), out int forcedMs) && forcedMs > 0;
+        bool exclusive = settings.Exclusive;                       // shared (default, volume works) vs exclusive
+        int reqLatency = settings.LatencyMs > 0 ? settings.LatencyMs : 10;
+
+        // Resolve the output device (a specific one from settings, else the system default).
+        MMDevice? dev = null;
+        using (var en = new MMDeviceEnumerator())
+        {
+            if (!string.IsNullOrEmpty(settings.DeviceId))
+                try { dev = en.GetDevice(settings.DeviceId); } catch { dev = null; }
+            dev ??= en.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+        }
+        outputDevice = dev;
 
         // Engine rate: exclusive → 44.1 kHz (bit-exact). Shared → the device mix rate (samples are resampled
         // to it once at load, so the OS does no per-buffer resampling).
-        outputSampleRate = exclusive ? 44100 : QueryDeviceMixRate(48000);
+        outputSampleRate = exclusive ? 44100 : outputDevice.AudioClient.MixFormat.SampleRate;
 
-        // NAudio owns the mixing and the fill-with-silence between notes (ReadFully). Master headroom keeps
-        // a few simultaneous voices below 0 dBFS.
+        // NAudio owns the mixing and the fill-with-silence between notes (ReadFully). Master = user volume ×
+        // an automatic per-polyphony headroom so a few simultaneous voices stay below 0 dBFS.
         mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(outputSampleRate, OutputChannels))
         {
             ReadFully = true,
@@ -64,20 +74,23 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         {
             if (e.SampleProvider is VoiceSampleProvider v) voices.TryRemove(v.StreamId, out _);
         };
-        var master = new VolumeSampleProvider(mixer) { Volume = 1f / MathF.Sqrt(Math.Min(maxVoices, 6)) };
+        float headroom = 1f / MathF.Sqrt(Math.Min(maxVoices, 6));
+        var master = new VolumeSampleProvider(mixer) { Volume = Math.Clamp(settings.MasterVolume, 0f, 1f) * headroom };
 
+        // Try the requested share/latency, then a few safe fallbacks.
         var candidates = new List<(AudioClientShareMode share, int latencyMs, string label)>();
         if (exclusive)
         {
-            foreach (int ms in forced ? new[] { forcedMs } : new[] { 10, 15, 20 })
-                candidates.Add((AudioClientShareMode.Exclusive, ms, $"exclusive {ms} ms (bit-exact, no Windows volume)"));
-            candidates.Add((AudioClientShareMode.Shared, forced ? forcedMs : 20, "shared (fallback)"));
+            candidates.Add((AudioClientShareMode.Exclusive, reqLatency, $"exclusive {reqLatency} ms (bit-exact, no Windows volume)"));
+            candidates.Add((AudioClientShareMode.Exclusive, Math.Max(reqLatency, 20), "exclusive 20 ms"));
+            candidates.Add((AudioClientShareMode.Shared, Math.Max(reqLatency, 20), "shared (fallback)"));
         }
         else
         {
-            foreach (int ms in forced ? new[] { forcedMs } : new[] { 10, 20, 30 })
-                candidates.Add((AudioClientShareMode.Shared, ms, $"shared {ms} ms (Windows volume works)"));
-            candidates.Add((AudioClientShareMode.Exclusive, forced ? forcedMs : 10, "exclusive (fallback)"));
+            candidates.Add((AudioClientShareMode.Shared, reqLatency, $"shared {reqLatency} ms (Windows volume works)"));
+            candidates.Add((AudioClientShareMode.Shared, Math.Max(reqLatency, 20), "shared 20 ms"));
+            candidates.Add((AudioClientShareMode.Shared, Math.Max(reqLatency, 30), "shared 30 ms"));
+            candidates.Add((AudioClientShareMode.Exclusive, reqLatency, "exclusive (fallback)"));
         }
 
         IWavePlayer? chosen = null;
@@ -87,7 +100,7 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
             WasapiOut? wo = null;
             try
             {
-                wo = new WasapiOut(c.share, useEventSync: true, c.latencyMs);
+                wo = new WasapiOut(outputDevice, c.share, useEventSync: true, c.latencyMs);
                 wo.Init(master);
                 wo.Play();
                 chosen = wo;
@@ -98,8 +111,8 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         }
         output = chosen ?? throw new InvalidOperationException("Could not open any WASAPI output device.");
 
-        Console.WriteLine($"[audio] NAudio MixingSampleProvider + WASAPI {mode}, {outputSampleRate} Hz / {OutputChannels} ch, " +
-                          $"polyphony {maxVoices}, master {master.Volume:0.00}");
+        Console.WriteLine($"[audio] NAudio MixingSampleProvider + WASAPI {mode} on \"{outputDevice.FriendlyName}\", " +
+                          $"{outputSampleRate} Hz / {OutputChannels} ch, polyphony {maxVoices}, master {master.Volume:0.00}");
     }
 
     public int Load(int resourceId, int priority)
@@ -208,6 +221,7 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
     {
         try { output.Stop(); } catch { /* ignore */ }
         output.Dispose();
+        outputDevice.Dispose();
         voices.Clear();
         buffers.Clear();
     }
@@ -236,16 +250,5 @@ public sealed class NAudioSoundPool : ISoundPool, IDisposable
         float c2 = p0 - 2.5f * p1 + 2f * p2 - 0.5f * p3;
         float c3 = 0.5f * (p3 - p0) + 1.5f * (p1 - p2);
         return ((c3 * t + c2) * t + c1) * t + p1;
-    }
-
-    private static int QueryDeviceMixRate(int fallback)
-    {
-        try
-        {
-            using var en = new MMDeviceEnumerator();
-            using var dev = en.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-            return dev.AudioClient.MixFormat.SampleRate;
-        }
-        catch { return fallback; }
     }
 }

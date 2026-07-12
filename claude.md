@@ -24,10 +24,10 @@ The design below is largely **intended behavior**. The current code reflects onl
 | 9 instruments + ~110 `.ogg` samples in `res/raw/` | ✅ Present | Banks: guitar, bagpipes, harp, harpsichord, piano, sitar(+drone/tampura), synth, violin, jew's-harp (`guimb*`) |
 | Low-latency audio engine (SoundPool-equivalent) | ✅ **Working** | `Audio/NAudioSoundPool.cs` — NAudio `MixingSampleProvider` + WASAPI shared (~10 ms), polyphonic, per-voice pitch/envelope/glissando; behind an `ISoundPool` seam. `DummySoundPool` kept as a silent/headless backend |
 | **Project compiles & plays audio** | ✅ **Yes** | `R` class generated; NAudio + NAudio.Vorbis added; plays clean polyphony — no pops or crackle (verified by ear) |
-| Controller / gamepad input | ✅ **Working (F500)** | `Input/WinmmControllerInput.cs` (winmm `joyGetPosEx`) behind `IControllerInput`; F500 buttons→notes, stick→chord cell. Keyboard backend + remap menu still TODO |
-| UI | ◐ Console play harness | `Program.cs` drives live play (joystick=chord, buttons=notes, Select=instrument); no graphical UI yet |
-| JSON presets & remappable controls | ❌ Not started | Presets currently exist only as hard-coded text-serialized strings (§5), **not** JSON yet |
-| Modulation / double-tap / pitch-bend-on-move logic | ❌ Not started | Fully specified in §6, unimplemented |
+| Controller / gamepad + keyboard input | ✅ **Working** | `Input/MappedControllerInput.cs` reads the winmm gamepad (F500) **and** keyboard (`KeyboardReader`) through a remappable `ControllerMap`; `WinmmControllerInput` kept for the raw F500 mapping |
+| UI | ✅ **WinForms app** | `UI/MainForm.cs` — tabs: Play (live state), Presets (grid editor), Controls (remap), Audio. The play loop is `Engine/PlayEngine.cs` on a background thread (`VP_HEADLESS=1` runs it console-only) |
+| JSON presets & config | ✅ **Working** | `Config/*` — presets (grid cells), controller map, and audio settings persist as JSON at `%APPDATA%/VirtuoPhone/config.json` (`ConfigStore`) |
+| Modulation / dash / configurable audio | ✅ **Working** | Start-modulation + directional dash in `PlayEngine`; audio device/mode/latency/volume via `AudioSettings` → `NAudioSoundPool`. Pitch-bend-on-move (§6) is the last optional TODO |
 
 ### Resolved — `R.Raw.*` resource ids (was the initial build blocker)
 **Fixed:** `Resources/R.cs` is auto-generated — a nested `R.Raw` of int constants plus an
@@ -49,14 +49,18 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
 ---
 
 ## 3. Tech Stack & Architecture
-- **Language / runtime:** C# on **.NET 8.0** (`net8.0`, `ImplicitUsings=enable`, `Nullable=enable`).
-- **Output:** Console `Exe` today; a real UI comes later (framework deferred — keep the core headless/decoupled;
-  when built, favor simple-to-maintain + performant).
-- **Configuration:** target is human-readable **JSON** for hardware mapping + musical presets (not built yet).
-- **Audio Engine:** custom low-latency C# engine modeled on Android `SoundPool` (pre-loaded buffers,
-  real-time polyphonic playback, per-stream rate/volume for pitch-shift). Currently faked by `DummySoundPool`.
-- **Namespaces:** root `VirtuoPhone` (`AppController`, `DummySoundPool`, `PointerMemory`) and
-  `VirtuoPhone.Models` (everything under `Models/`). Note: files in `Audio/` use the root `VirtuoPhone` namespace.
+- **Language / runtime:** C# on **.NET 8** — **`net8.0-windows` + WinForms** (`UseWindowsForms=true`,
+  `ImplicitUsings=enable`, `Nullable=enable`). `OutputType=Exe` keeps a console for logs / `VP_HEADLESS`.
+- **UI:** **WinForms** (`UI/MainForm.cs`, tabbed) — chosen for simple-to-maintain + native/performant. The core
+  (models/audio/input/engine) stays UI-agnostic; the **`PlayEngine`** runs the play loop on its own thread and
+  pushes state to the UI via events (never blocks the UI or audio).
+- **Configuration:** human-readable **JSON** at `%APPDATA%/VirtuoPhone/config.json` — presets, controller map,
+  audio settings (`Config/*`, `System.Text.Json` with string enums). **Built** (`ConfigStore.Load/Save`).
+- **Audio Engine:** custom low-latency C# engine modeled on Android `SoundPool` (pre-loaded buffers, real-time
+  polyphonic playback, per-stream rate/volume); real backend `NAudioSoundPool` (device/mode/latency/volume from
+  `AudioSettings`), `DummySoundPool` for headless/tests.
+- **Namespaces:** `VirtuoPhone` (root: `AppController`, audio seam), `VirtuoPhone.Models`, `VirtuoPhone.Input`,
+  `VirtuoPhone.Config`, `VirtuoPhone.Engine`, `VirtuoPhone.UI`. Files in `Audio/` use the root `VirtuoPhone`.
 
 ### Decisions (2026-07-10)
 - **Approach:** build a **vertical slice first** — one instrument + one hard-coded preset + the real F500 → sound —
@@ -84,13 +88,14 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
   `MixingSampleProvider`.** Don't hand-roll audio mixing when the library's is proven. Keep any render-thread
   code **allocation-free** (no per-buffer enumerator/LINQ) so the GC can't pause it into underruns. Earlier
   low-latency "pops" were **buffer underruns**: 5 ms underran; **10 ms is clean and punchy**; to go lower,
-  add a custom render thread on **MMCSS "Pro Audio"**. `VP_LATENCY_MS` and `VP_DIAG` (=`raw`|`engine`) env
-  vars remain for isolating audio issues.
-- **Input:** **DirectInput/HID** (or a standard Windows joystick), behind an **`IControllerInput`** abstraction
-  that treats **gamepad and keyboard uniformly**. A **remap menu** binds each musical/system action to either a
-  controller button/axis *or* a keyboard key. Keep it open to other backends.
-  *(Dev/test device: a Mayflash F500 Elite is connected via USB and available for live input capture.)*
-- **UI:** deferred; core stays headless and decoupled so any UI (WinForms/WPF/Avalonia) can bind later.
+  add a custom render thread on **MMCSS "Pro Audio"**. Audio choices now live in the **Audio settings tab**
+  (`AudioSettings` in the JSON config), not env vars; **`VP_HEADLESS=1`** runs the engine console-only.
+- **Input (built):** **`MappedControllerInput`** reads the winmm gamepad (F500) **and** the keyboard uniformly
+  behind **`IControllerInput`**, resolving both through a remappable **`ControllerMap`** (the **Controls** tab
+  rebinds any action to a gamepad button and/or a key; persisted in the JSON config).
+  *(Dev/test device: a Mayflash F500 Elite is connected via USB.)*
+- **UI (built):** **WinForms** (`UI/MainForm.cs`), tabbed (Play / Presets / Controls / Audio). The core stays
+  decoupled — the `PlayEngine` runs off-thread and pushes state via events.
 - **Resource ids (`R.Raw.*`):** resolved with an **auto-generated `R` class** (int ids → `res/raw/<name>.ogg`),
   generated from the union of code references and bundled files; regenerate when samples change.
 
@@ -98,20 +103,23 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
 
 ## 4. Codebase Map
 ```
-VirtuoPhoneGamePadWin.csproj   .NET 8 console exe
-Program.cs                     Live play harness: F500 input → voice-led 3×3 chord grid → instrument; Select=instrument
-AppController.cs               Singleton; STRING_COUNT=8; instrument factory + cache; NextInstrument() cycles banks
+VirtuoPhoneGamePadWin.csproj   .NET 8 (net8.0-windows) WinForms Exe
+Program.cs                     Entry point ([STAThread] Main): launches UI/MainForm; VP_HEADLESS=1 runs the engine console-only
+AppController.cs               Singleton; STRING_COUNT=8; instrument factory + cache; Next/Set/RebuildInstrument()
 Audio/
   ISoundPool.cs                SoundPool API surface — the swappable audio seam
   NAudioSoundPool.cs           Real engine: NVorbis decode, load-time cubic resample, NAudio MixingSampleProvider + WASAPI
   VoiceSampleProvider.cs       One playing voice as an ISampleProvider (variable-rate read, envelope, glissando) — a mixer input
   DummySoundPool.cs            Silent/headless ISoundPool (tests / no audio device)
-  AudioBackend.cs              Factory selecting the ISoundPool backend (default: NAudio)
+  AudioBackend.cs              Factory selecting the ISoundPool backend (default NAudio) + current AudioSettings
+  AudioDevices.cs              Lists WASAPI render endpoints for the Audio settings device picker
   PointerMemory.cs             Tracks active stream IDs so they can be stopped together
 Input/
-  IControllerInput.cs          Controller abstraction (gamepad/keyboard uniform): Poll() → InputSnapshot (notes mask, Direction, Select…)
+  IControllerInput.cs          Controller abstraction (gamepad/keyboard uniform): Poll() → InputSnapshot (notes mask, Direction, Start, Select, Home)
   WinmmJoystick.cs             Low-level winmm P/Invoke (joyGetPosEx/joyGetDevCaps) — raw buttons + axes
   WinmmControllerInput.cs      IControllerInput over WinmmJoystick: F500 button→note mask + 8-way stick → Direction
+  KeyboardReader.cs            Polled key state via GetAsyncKeyState (fits the engine poll loop)
+  MappedControllerInput.cs     IControllerInput combining gamepad + keyboard through a remappable ControllerMap
 Models/
   Note.cs                      Pitch as semitone int; C..B constants; pitch = noteType + octave*12
   Chord.cs                     Hard-coded voicings per ChordType; transpose; (de)serialize "name:typeId:noteType"
@@ -127,6 +135,19 @@ Models/
     Instrument.cs              Abstract base: preloads samples into multiSampleList[128], interpolates gaps,
                                Play/Stop/SetStreamPitch, feature flags via abstract Build*() methods
     Bagpipes, Harp, Harpsichord, JewsHarp, Piano, Sitar, SteelGuitar, Synth, Violin  (9 concrete instruments)
+Config/
+  AudioSettings.cs             Device / shared-vs-exclusive / latency / master volume (→ NAudioSoundPool)
+  Preset.cs                    A preset: 9 inner cells + 4 outer "dash" cells, each Cell(root, ChordType); Default() = Chromatic Spiral
+  ControllerMap.cs             Remappable gamepad-button + keyboard-key bindings per action (F500 + keyboard defaults)
+  AppConfig.cs                 Presets + active + instrument + audio + controls; ConfigStore load/save JSON (%APPDATA%/VirtuoPhone)
+Engine/
+  PlayEngine.cs                The play loop on a background thread: modulation, dash, voice management; Status/StateChanged events
+UI/
+  MainForm.cs                  WinForms window + tabs; owns the config, input, and PlayEngine lifecycle
+  PresetTab.cs                 Grid editor (edit each cell's chord) + preset new/duplicate/rename/delete/save
+  ControlsTab.cs               Remap table; rebind any action to a gamepad button and/or a key
+  AudioTab.cs                  Output device / mode / latency / master-volume, live-applied
+  Capture.cs, Prompt.cs        Small modal dialogs (key/button capture, text input)
 Resources/R.cs                 Auto-generated resource-id table (R.Raw.* -> res/raw/<name>.ogg); see §2
 res/raw/*.ogg                  ~110 mono 44.1 kHz samples; copied next to the exe at build (see .csproj)
 claude.original.prompt.md      Original French brief that seeded this project (design intent)
@@ -308,28 +329,22 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
    behind `ISoundPool`; swappable via `AudioBackend`. `DummySoundPool` kept as the headless backend.
 3. ✅ **Prove audio end-to-end** — `Program.cs` plays chords through the instrument: no clipping, and **no
    pops or crackle at ~10 ms shared** (verified by ear, after switching to NAudio's mixer — see §3 lesson).
-4. ◐ **Controller input:** ✅ Mayflash F500 via `Input/WinmmControllerInput.cs` (winmm `joyGetPosEx`) behind
-   `IControllerInput` — buttons→notes, stick→chord cell, polled off the audio thread. **TODO:** keyboard
-   backend + the remap menu.
-5. **Preset persistence (JSON):** define the JSON schema for presets (3×3 chord layouts) and controller
-   maps; implement load and save; migrate the §5 text serialization (or ship a converter).
-6. **Preset editing:** let the user build and modify chord layouts — set each joystick cell's chord
-   (root + `ChordType`), and rename / add / remove / duplicate / select presets — then save and reload them.
-   The model already has the primitives (`GuitarPreset.SetChord/ReplaceChord/RemoveChord/Add/RegenerateChords`,
-   `Chord.SetFundamental`); this adds the authoring workflow (its editor UI lands with the UI work below).
-7. **Interaction logic & voice management:** ✅ done in the play harness — per-button polyphony, held-note
-   swap on chord change, per-instrument note-off, monophony (last-note priority + fall-back), optional
-   violin envelope, drones (bagpipes/sitar), Select = change instrument, **Start = modulation** (single press
-   transposes the grid so the aimed cell becomes the new major center; double-tap forces that center minor),
-   and the **double-tap "dash"** (a cardinal tapped twice selects its outer tension cell). The §6 interaction
-   mechanics are now complete; presets/UI are next. See §6.
-8. **UI:** replace the console with a real UI showing the active cell, instrument, and note layout,
-   and hosting the preset editor from step 6.
-9. **Configurable audio (eventually):** expose the engine's currently baked-in choices as user settings
-   (in the JSON config) — output **latency**, **exclusive vs shared**, **output device**, and **master
-   volume**, plus a lower-latency **MMCSS "Pro Audio"** render path. Defaults stay as today (WASAPI
-   **shared** at the device rate, ~10 ms; `VP_AUDIO_MODE=exclusive` for 44.1 kHz bit-exact); the
-   `VP_LATENCY_MS`/`VP_DIAG` env vars are temporary test hooks to be replaced.
+4. ✅ **Controller input** — `Input/MappedControllerInput.cs` reads the F500 (winmm) **and** the keyboard
+   behind `IControllerInput` through a remappable `ControllerMap`; polled off the audio thread.
+5. ✅ **Preset persistence (JSON)** — `Config/*` + `ConfigStore`: presets (grid cells), controller map, and
+   audio settings load/save as JSON at `%APPDATA%/VirtuoPhone/config.json`. (The §5 text serialization on
+   `Chord`/`GuitarPreset` remains for the Java-port model; the app itself uses the JSON config.)
+6. ✅ **Preset editing** — the **Presets** tab: set each cell's chord (root + `ChordType`) and
+   new / duplicate / rename / delete / select presets; edits push live to the engine and persist.
+7. **Interaction logic & voice management:** ✅ done — per-button polyphony, held-note swap on chord change,
+   per-instrument note-off, monophony (last-note priority + fall-back), optional violin envelope, drones
+   (bagpipes/sitar), Select = change instrument, **Start = modulation**, and the **double-tap "dash"**. The §6
+   mechanics are complete except the optional **pitch-bend-on-move** (a held note bends as the stick moves). See §6.
+8. ✅ **UI** — `UI/MainForm.cs` (WinForms), tabs Play / Presets / Controls / Audio; the `PlayEngine` runs
+   off-thread and pushes live state to the Play tab.
+9. ✅ **Configurable audio** — the **Audio** tab / `AudioSettings`: output **device**, **shared vs exclusive**,
+   **latency**, **master volume**, live-applied and persisted (replaces the old `VP_*` env vars). Defaults stay
+   WASAPI **shared** at the device rate, ~10 ms. **Remaining (optional):** an MMCSS "Pro Audio" render path.
 10. ✅ **Voice leading** — `Models/VoiceLeading.cs`: each grid cell is re-voiced as the **closest inversion**
     to the centre voicing (per-position nearest chord tone; ties prefer the higher pitch) and **every chord
     tone is guaranteed present** (a completeness pass adds any missing tone at the cheapest over-represented
@@ -341,13 +356,13 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
 
 ## 9. Build & Run
 ```powershell
-dotnet build                                 # builds (net8.0)
-dotnet run                                   # live play: F500 = chords/notes, Select = instrument, Ctrl+C to quit
-dotnet test Tests/VirtuoPhone.Tests.csproj   # unit tests (voice-leading, string-expander)
-VP_DIAG=engine dotnet run                    # audio diagnostic: play isolated notes through the engine
+dotnet build                                 # net8.0-windows (WinForms)
+dotnet run                                   # launches the WinForms app (Play / Presets / Controls / Audio tabs)
+dotnet test Tests/VirtuoPhone.Tests.csproj   # unit tests (voice-leading, string-expander, chord types, config JSON)
+$env:VP_HEADLESS=1; dotnet run               # headless: run the engine with console logging, no window
 ```
-Restore/build target framework is `net8.0`. When adding audio/input NuGet packages, add them to
-`VirtuoPhoneGamePadWin.csproj`.
+Target framework is `net8.0-windows` (WinForms). Config persists to `%APPDATA%/VirtuoPhone/config.json`.
+When adding NuGet packages, add them to `VirtuoPhoneGamePadWin.csproj`.
 
 ---
 

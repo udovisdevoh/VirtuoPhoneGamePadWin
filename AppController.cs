@@ -26,8 +26,17 @@ public class AppController
         () => new Bagpipes(),
         () => new JewsHarp(),
     };
+    // Display names, parallel to instrumentFactories (for the UI / config).
+    public static readonly string[] InstrumentNames =
+    {
+        "Steel Guitar", "Piano", "Harpsichord", "Harp", "Sitar", "Synth", "Violin", "Bagpipes", "Jew's Harp",
+    };
+
     private int instrumentIndex;
     private Instrument? instrument;
+
+    public int InstrumentIndex => instrumentIndex;
+    public int InstrumentCount => instrumentFactories.Length;
 
     // The active instrument, built lazily. Building one opens an audio device and decodes its samples, and
     // Chord construction asks for it repeatedly — so keep exactly one alive.
@@ -38,6 +47,24 @@ public class AppController
     {
         instrument?.Release();
         instrumentIndex = (instrumentIndex + 1) % instrumentFactories.Length;
+        instrument = instrumentFactories[instrumentIndex]();
+        return instrument;
+    }
+
+    // Select a specific instrument index (from a saved config or the UI).
+    public Instrument SetInstrument(int index)
+    {
+        int n = instrumentFactories.Length;
+        instrument?.Release();
+        instrumentIndex = ((index % n) + n) % n;
+        instrument = instrumentFactories[instrumentIndex]();
+        return instrument;
+    }
+
+    // Rebuild the current instrument in place — e.g. after audio settings change (new sound pool / device).
+    public Instrument RebuildInstrument()
+    {
+        instrument?.Release();
         instrument = instrumentFactories[instrumentIndex]();
         return instrument;
     }
