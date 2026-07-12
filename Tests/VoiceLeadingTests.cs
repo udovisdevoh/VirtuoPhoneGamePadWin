@@ -93,7 +93,7 @@ public class VoiceLeadingTests
         // E major -> Bb/A# major {A#,D,F}. The naive nearest gave adjacent A#3 A#3 / A#4 A#4; the global search
         // finds the closest inversion with no adjacent duplicate: F A# F A# D F A# D (each voice within ±3).
         int[] v = VoiceLeading.ClosestVoicing(EMajor, new HashSet<int> { 10, 2, 5 });
-        AssertNoConsecutiveDuplicate(v);
+        AssertStrictlyAscending(v);
         AssertContainsClasses(v, 10, 2, 5);
         Assert.Equal(new[] { 29, 34, 41, 46, 50, 53, 58, 62 }, v);
     }
@@ -104,7 +104,7 @@ public class VoiceLeadingTests
         // E major -> D major {D,F#,A}. Naive nearest gave adjacent A3 A3 / A4 A4; closest no-duplicate
         // inversion is F# A F# A D F# A D (each voice within ±3, no octave-spacing).
         int[] v = VoiceLeading.ClosestVoicing(EMajor, new HashSet<int> { 2, 6, 9 });
-        AssertNoConsecutiveDuplicate(v);
+        AssertStrictlyAscending(v);
         AssertContainsClasses(v, 2, 6, 9);
         Assert.Equal(new[] { 30, 33, 42, 45, 50, 54, 57, 62 }, v);
     }
@@ -119,50 +119,59 @@ public class VoiceLeadingTests
                 {
                     var tri = new HashSet<int> { root, (root + third) % 12, (root + 7) % 12 };
                     var v = VoiceLeading.ClosestVoicing(src, tri);
-                    AssertNoConsecutiveDuplicate(v);
+                    AssertStrictlyAscending(v);
                     AssertContainsClasses(v, tri.ToArray());
                 }
                 var dim7 = new HashSet<int> { root, (root + 3) % 12, (root + 6) % 12, (root + 9) % 12 };  // dash outer cells
                 var vd = VoiceLeading.ClosestVoicing(src, dim7);
-                AssertNoConsecutiveDuplicate(vd);
+                AssertStrictlyAscending(vd);
                 AssertContainsClasses(vd, dim7.ToArray());
             }
     }
+
+    // ---- Same note-count → re-voice (close, ascending);  different count → skip, keep the target's voicing ----
 
     // Reference E minor pentatonic (E G A B D) as an 8-voice source: E G A B D E G A.
     private static readonly int[] EPentMinor = { 28, 31, 33, 35, 38, 40, 43, 45 };
 
     [Fact]
-    public void ClosestVoicing_EPentMinor_ToEMajor()
+    public void ClosestVoicing_EPentMinor_ToDPentMinor_SameCount_IsCloseAndAscending()
     {
-        int[] v = VoiceLeading.ClosestVoicing(EPentMinor, new HashSet<int> { 4, 8, 11 });   // E major triad
-        AssertVoicingRules(v, 4, 8, 11);
-        Assert.Equal(new[] { 28, 32, 35, 32, 35, 40, 44, 47 }, v);   // E G# B G# B E G# B
-    }
-
-    [Fact]
-    public void ClosestVoicing_EPentMinor_ToAMajor()
-    {
-        int[] v = VoiceLeading.ClosestVoicing(EPentMinor, new HashSet<int> { 9, 1, 4 });     // A major triad
-        AssertVoicingRules(v, 9, 1, 4);
-        Assert.Equal(new[] { 28, 33, 37, 33, 37, 40, 45, 49 }, v);   // E A C# A C# E A C#
-    }
-
-    [Fact]
-    public void ClosestVoicing_EPentMinor_ToDPentMinor()
-    {
-        int[] v = VoiceLeading.ClosestVoicing(EPentMinor, new HashSet<int> { 2, 5, 7, 9, 0 }); // D min pentatonic D F G A C
+        // E minor pentatonic (5 notes) → D minor pentatonic (5 notes): same count, so it IS re-voiced — and
+        // lands very close (the two share G/A/D), strictly ascending: F G A C D F G A.
+        int[] v = VoiceLeading.ClosestVoicing(EPentMinor, new HashSet<int> { 2, 5, 7, 9, 0 });
         AssertVoicingRules(v, 2, 5, 7, 9, 0);
-        Assert.Equal(new[] { 29, 31, 33, 36, 38, 41, 43, 45 }, v);   // F G A C D F G A — the two pentatonics share G/A/D, so ±1
+        Assert.Equal(new[] { 29, 31, 33, 36, 38, 41, 43, 45 }, v);
     }
 
-    // Asserts all three voicing rules at once: no adjacent exact duplicate, every voice is a target chord tone,
-    // and every target chord tone is present.
+    [Fact]
+    public void VoiceCell_SameNoteCount_DelegatesToClosestVoicing()
+    {
+        // E min pent (5) → D min pent (5): equal counts → VoiceCell re-voices (same as ClosestVoicing).
+        int[] dPentMinVoicing = { 26, 29, 31, 33, 36, 38, 41, 45 };   // some D-min-pent voicing (D F G A C …)
+        int[] v = VoiceLeading.VoiceCell(EPentMinor, dPentMinVoicing);
+        Assert.Equal(VoiceLeading.ClosestVoicing(EPentMinor, new HashSet<int> { 2, 5, 7, 9, 0 }), v);
+        AssertVoicingRules(v, 2, 5, 7, 9, 0);
+    }
+
+    [Theory]
+    // Different note count → the re-organisation is SKIPPED; VoiceCell keeps the target chord's own voicing
+    // (sorted ascending), never the awkward remapped one. Centre E min pent (5 notes) vs a triad target (3).
+    [InlineData(new[] { 40, 28, 35, 44, 32, 56, 47, 52 }, new[] { 28, 32, 35, 40, 44, 47, 52, 56 })]  // → E major
+    [InlineData(new[] { 45, 33, 37, 40, 61, 49, 57, 52 }, new[] { 33, 37, 40, 45, 49, 52, 57, 61 })]  // → A major
+    public void VoiceCell_DifferentNoteCount_KeepsTargetVoicingAscending(int[] targetVoicing, int[] expected)
+    {
+        int[] v = VoiceLeading.VoiceCell(EPentMinor, targetVoicing);
+        Assert.Equal(expected, v);              // the target chord's own notes, sorted ascending — not re-voiced
+        AssertStrictlyAscending(v);
+    }
+
+    // Asserts all three voicing rules at once: strictly ascending, every voice is a target chord tone, and
+    // every target chord tone is present.
     private static void AssertVoicingRules(int[] v, params int[] classes)
     {
         var set = new HashSet<int>(classes);
-        for (int i = 1; i < v.Length; i++)
-            Assert.True(v[i] != v[i - 1], $"consecutive duplicate at {i}: [{string.Join(", ", v)}]");
+        AssertStrictlyAscending(v);
         foreach (int p in v)
             Assert.Contains(((p % 12) + 12) % 12, set);
         var present = v.Select(p => ((p % 12) + 12) % 12).ToHashSet();
@@ -187,15 +196,15 @@ public class VoiceLeadingTests
                 {
                     var classes = sc.Select(x => (x + root) % 12).ToHashSet();
                     var v = VoiceLeading.ClosestVoicing(src, classes);
-                    AssertNoConsecutiveDuplicate(v);
+                    AssertStrictlyAscending(v);
                     AssertContainsClasses(v, classes.ToArray());
                 }
     }
 
-    private static void AssertNoConsecutiveDuplicate(int[] v)
+    private static void AssertStrictlyAscending(int[] v)
     {
         for (int i = 1; i < v.Length; i++)
-            Assert.True(v[i] != v[i - 1], $"consecutive duplicate at index {i}: [{string.Join(", ", v)}]");
+            Assert.True(v[i] > v[i - 1], $"not strictly ascending at index {i}: [{string.Join(", ", v)}]");
     }
 
     private static void AssertContainsClasses(int[] v, params int[] classes)

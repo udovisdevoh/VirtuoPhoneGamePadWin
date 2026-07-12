@@ -345,15 +345,17 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
 9. ✅ **Configurable audio** — the **Audio** tab / `AudioSettings`: output **device**, **shared vs exclusive**,
    **latency**, **master volume**, live-applied and persisted (replaces the old `VP_*` env vars). Defaults stay
    WASAPI **shared** at the device rate, ~10 ms. **Remaining (optional):** an MMCSS "Pro Audio" render path.
-10. ✅ **Voice leading** — `Models/VoiceLeading.cs`: re-voice each grid cell as the voicing of **minimal total
-    movement** from the centre voicing, subject to two rules — **every chord tone present** and **no two
-    consecutive voices share the exact same pitch** (the same note may repeat only in another octave). A small
-    **dynamic program** evaluates every nearby inversion (chord tones within ±13 semitones of each voice) and
-    picks the closest one satisfying both rules; ties prefer the higher pitch. It does **not** locally
-    octave-space duplicates — that pushes voices far from the target (a rejected earlier approach). When no
-    duplicate is forced it equals the per-position nearest, so the worked examples are unchanged. **Pre-rendered
-    once** per preset. E.g. E major `E B E G# B E G# B` → C = `E C E G C E G C`; E → Bb = `F A# F A# D F A# D`
-    (no adjacent A#). Verified by unit tests (E→C/A/F/B/Am, C→E, and the no-consecutive rule via E→Bb and E→D).
+10. ✅ **Voice leading** — `Models/VoiceLeading.cs`. `ClosestVoicing` re-voices the target as the voicing of
+    **minimal total movement** from the centre voicing under two hard rules: **every chord tone present** and
+    **strictly ascending** (each voice higher than the last — this also bans exact duplicates and gives a clean
+    low→high layout). A small **dynamic program** evaluates every nearby inversion (widening the candidate window
+    until a complete ascending voicing fits) and picks the closest; ties prefer the higher pitch. `VoiceCell`
+    adds the policy the engine uses: **re-voice only when the centre and target chords have the same number of
+    notes**; when they differ (triad centre vs a 7th / pentatonic / dim7 / scale cell) the re-organisation is
+    **skipped** and the target chord's own voicing is used (sorted ascending), avoiding the awkward non-ascending
+    spreads remapping would force. **Pre-rendered once** per preset. E.g. E major → C = `E C E G C E G C`;
+    E → Bb = `F A# F A# D F A# D` (ascending). Verified by unit tests (E→C/A/F/B/Am, C→E, E→Bb, E→D, and the
+    pentatonic same-count / different-count cases).
 
 ---
 

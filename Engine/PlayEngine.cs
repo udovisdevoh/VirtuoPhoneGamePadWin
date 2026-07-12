@@ -72,9 +72,8 @@ public sealed class PlayEngine
     private GridCell MakeCell(int root, ChordType type, int[] anchor)
     {
         var chord = new Chord(root, type);
-        var classes = new HashSet<int>();
-        foreach (Note n in chord) classes.Add(n.GetPitch() % 12);
-        return new GridCell(VoiceLeading.ClosestVoicing(anchor, classes), root % 12, chord.ToString());
+        int[] chordVoicing = chord.Select(n => n.GetPitch()).ToArray();
+        return new GridCell(VoiceLeading.VoiceCell(anchor, chordVoicing), root % 12, chord.ToString());
     }
 
     private void BuildGrids()

@@ -9,38 +9,49 @@ namespace VirtuoPhone.Models;
 /// semitone movement, per position), subject to two hard rules:
 /// <list type="number">
 /// <item>every chord tone (target pitch class) appears at least once, and</item>
-/// <item>no two <b>consecutive</b> voices are the exact same pitch — the same note may repeat only in a
-/// <i>different octave</i>.</item>
+/// <item>the voicing is <b>strictly ascending</b> (each voice higher than the last — which also guarantees no
+/// two voices share a pitch, and gives a clean low→high button layout).</item>
 /// </list>
 ///
-/// Picking each position independently (nearest tone) can force identical neighbours; "fixing" that locally by
-/// octave-spacing pushes voices far from the target. Instead this <b>evaluates every nearby inversion</b> with a
-/// small dynamic program over the positions: for each position it considers the chord tones within an octave-ish
-/// window, and finds the assignment of <b>minimal total movement</b> that never repeats a pitch on adjacent
-/// voices and covers all tones. Ties prefer the higher pitch. Compute once per preset and cache.
+/// A small dynamic program over the positions <b>evaluates every nearby inversion</b> (the chord tones within an
+/// octave-ish window of each voice) and finds the assignment of <b>minimal total movement</b> that is strictly
+/// ascending and covers all tones. Ties prefer the higher pitch. Compute once per preset and cache.
+///
+/// Re-voicing only makes sense when both chords have the same number of notes; when they differ, use
+/// <see cref="VoiceCell"/>, which skips the re-organisation and keeps the target chord's own ascending voicing.
 ///
 /// Examples — centre E major <c>E B E G# B E G# B</c> → C major = <c>E C E G C E G C</c> (each note 0/±1);
-/// E → Bb = <c>F A# F A# D F A# D</c> (no adjacent <c>A# A#</c>), not an octave-spaced voicing.
+/// E → Bb = <c>F A# F A# D F A# D</c> (ascending pitches, no octave-spacing).
 /// </summary>
 public static class VoiceLeading
 {
-    private const int Window = 13;   // consider chord tones within ±13 semitones of each source voice
-
     /// <summary>
-    /// The closest voicing (per-position minimal movement) whose voices are all target chord tones, with every
-    /// target class present and no two consecutive voices sharing the exact same pitch.
+    /// The closest strictly-ascending voicing (per-position minimal movement) whose voices are all target chord
+    /// tones, with every target class present. Widens the candidate window until such a voicing exists — real
+    /// ascending sources succeed on the first (±13) pass; a compressed source just needs a wider span to fit an
+    /// ascending run.
     /// </summary>
     public static int[] ClosestVoicing(IReadOnlyList<int> sourceVoicing, IReadOnlyCollection<int> targetPitchClasses)
     {
-        int n = sourceVoicing.Count;
         int[] classes = targetPitchClasses.Select(PitchClass).Distinct().ToArray();
+        for (int window = 13; window <= 120; window += 12)
+        {
+            int[]? solved = Solve(sourceVoicing, classes, window);
+            if (solved != null) return solved;
+        }
+        return sourceVoicing.ToArray();   // unreachable for any real chord — never crash
+    }
+
+    /// <summary>The strict-ascending DP at a fixed candidate window; null if no complete voicing fits.</summary>
+    private static int[]? Solve(IReadOnlyList<int> sourceVoicing, int[] classes, int window)
+    {
+        int n = sourceVoicing.Count;
         var classIndex = new Dictionary<int, int>();
         for (int j = 0; j < classes.Length; j++) classIndex[classes[j]] = j;
         int fullMask = (1 << classes.Length) - 1;
 
-        // Candidate chord-tone pitches per position (within the window; always non-empty).
         var cand = new List<int>[n];
-        for (int i = 0; i < n; i++) cand[i] = Candidates(sourceVoicing[i], classes);
+        for (int i = 0; i < n; i++) cand[i] = Candidates(sourceVoicing[i], classes, window);
 
         // DP: state = (candidate index at i, bitmask of classes covered by positions 0..i)
         //     value = (min total cost, back-pointer to the previous state).
@@ -64,7 +75,7 @@ public static class VoiceLeading
                 for (int ci = 0; ci < cand[i].Count; ci++)
                 {
                     int p = cand[i][ci];
-                    if (p == prevPitch) continue;                                  // rule 2: no adjacent duplicate
+                    if (p <= prevPitch) continue;                                  // rule 2: strictly ascending
                     var key = (ci, pkey.mask | (1 << classIndex[PitchClass(p)]));   // rule 1 tracked via the mask
                     long c = pval.cost + Cost(p, sourceVoicing[i]);
                     if (!dp[i].TryGetValue(key, out var e) || c < e.cost) dp[i][key] = (c, pkey.cand, pkey.mask);
@@ -72,15 +83,12 @@ public static class VoiceLeading
             }
         }
 
-        // Cheapest end state that covers every chord tone; fall back to the cheapest overall if (n < classes)
-        // makes completeness impossible.
+        // Cheapest end state that covers every chord tone; null if none exists at this window.
         (int cand, int mask) best = default;
         long bestCost = long.MaxValue;
         foreach (var (key, val) in dp[n - 1])
             if (key.mask == fullMask && val.cost < bestCost) { bestCost = val.cost; best = key; }
-        if (bestCost == long.MaxValue)
-            foreach (var (key, val) in dp[n - 1])
-                if (val.cost < bestCost) { bestCost = val.cost; best = key; }
+        if (bestCost == long.MaxValue) return null;
 
         var result = new int[n];
         var cur = best;
@@ -92,18 +100,31 @@ public static class VoiceLeading
         return result;
     }
 
-    /// <summary>Chord-tone pitches within the window around <paramref name="source"/> (candidates for one voice).</summary>
-    private static List<int> Candidates(int source, int[] classes)
+    /// <summary>
+    /// Build one grid cell's voicing from the centre voicing and the target chord's own voicing. Re-voicing
+    /// (<see cref="ClosestVoicing"/>) is applied only when the two chords have the <b>same number of distinct
+    /// notes</b> — then the result stays close and ascending. When the counts differ (e.g. a triad centre vs a
+    /// 7th / pentatonic / scale cell) the automatic re-organisation is <b>skipped</b> and the target chord's own
+    /// voicing is used (sorted ascending), avoiding the awkward non-ascending spreads that remapping would force.
+    /// </summary>
+    public static int[] VoiceCell(IReadOnlyList<int> centerVoicing, IReadOnlyList<int> targetChordVoicing)
+    {
+        var targetClasses = targetChordVoicing.Select(PitchClass).ToHashSet();
+        int centerClassCount = centerVoicing.Select(PitchClass).Distinct().Count();
+        return centerClassCount == targetClasses.Count
+            ? ClosestVoicing(centerVoicing, targetClasses)
+            : targetChordVoicing.OrderBy(p => p).ToArray();
+    }
+
+    /// <summary>Chord-tone pitches within ±<paramref name="window"/> of <paramref name="source"/> (candidates for one voice).</summary>
+    private static List<int> Candidates(int source, int[] classes, int window)
     {
         var list = new List<int>();
         foreach (int c in classes)
         {
-            int nearest = NearestPitchForClass(source, c);          // always within ±6, so always included
-            for (int oct = -2; oct <= 2; oct++)
-            {
-                int p = nearest + oct * 12;
-                if (p >= 0 && p <= 127 && Math.Abs(p - source) <= Window) list.Add(p);
-            }
+            int nearest = NearestPitchForClass(source, c);   // within ±6, so always in range
+            for (int p = nearest; p <= 127 && p - source <= window; p += 12) if (p >= 0) list.Add(p);
+            for (int p = nearest - 12; p >= 0 && source - p <= window; p -= 12) list.Add(p);
         }
         return list;
     }
