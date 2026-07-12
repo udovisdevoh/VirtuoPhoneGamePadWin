@@ -7,3 +7,5 @@
 /obj
 /Tests/obj
 /Tests/bin/Debug/net8.0
+/bin/Debug/net8.0-windows
+/Tests/bin/Debug/net8.0-windows
