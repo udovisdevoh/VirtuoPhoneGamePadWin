@@ -72,8 +72,7 @@ public sealed class PresetTab : UserControl
         bar.Controls.Add(MakeButton("Duplicate", DuplicatePreset));
         bar.Controls.Add(MakeButton("Rename", RenamePreset));
         bar.Controls.Add(MakeButton("Delete", DeletePreset));
-        bar.Controls.Add(MakeButton("Save", () => { main.Save(); }));
-        root.Controls.Add(bar, 0, 0);
+        root.Controls.Add(bar, 0, 0);   // no Save button — every edit auto-saves to the JSON config
 
         // --- 5×5 cell grid ---
         var grid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 5, RowCount = 5, Margin = new Padding(0, 8, 0, 8) };

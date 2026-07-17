@@ -20,7 +20,7 @@ public sealed class MainForm : Form
 
     // Play tab
     private Button btnStartStop = null!;
-    private Label lblInput = null!, lblInstrument = null!, lblCenter = null!, lblChord = null!, lblDir = null!, lblLayout = null!;
+    private Label lblInput = null!, lblOctave = null!, lblInstrument = null!, lblCenter = null!, lblChord = null!, lblDir = null!, lblLayout = null!;
     private TextBox txtLog = null!;
 
     public AppConfig Config => config;
@@ -76,9 +76,17 @@ public sealed class MainForm : Form
 
         btnStartStop = new Button { Text = "▶ Start", Width = 120, Height = 32, Font = new Font("Segoe UI", 10f, FontStyle.Bold) };
         btnStartStop.Click += (_, _) => { if (EngineRunning) StopEngine(); else StartEngine(); };
-        lblInput = new Label { Text = $"Input: {input.Name}", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(16, 8, 0, 0) };
+        var btnOctDown = new Button { Text = "Octave −", AutoSize = true, Margin = new Padding(16, 4, 0, 0) };
+        var btnOctUp = new Button { Text = "Octave +", AutoSize = true, Margin = new Padding(4, 4, 0, 0) };
+        lblOctave = new Label { Text = OctaveText(), AutoSize = true, Margin = new Padding(8, 9, 0, 0) };
+        btnOctDown.Click += (_, _) => ShiftOctave(-1);
+        btnOctUp.Click += (_, _) => ShiftOctave(+1);
+        lblInput = new Label { Text = $"Input: {input.Name}", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(24, 9, 0, 0) };
         var top = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, FlowDirection = FlowDirection.LeftToRight };
         top.Controls.Add(btnStartStop);
+        top.Controls.Add(btnOctDown);
+        top.Controls.Add(lblOctave);
+        top.Controls.Add(btnOctUp);
         top.Controls.Add(lblInput);
         root.Controls.Add(top, 0, 0);
 
@@ -112,7 +120,7 @@ public sealed class MainForm : Form
     {
         input.SetMap(config.Controls);
         AudioBackend.Settings = config.Audio;
-        engine = new PlayEngine(input, config.ActivePresetOrDefault(), config.Instrument);
+        engine = new PlayEngine(input, config.ActivePresetOrDefault(), config.Instrument, config.OctaveShift);
         engine.Status += m => Ui(() => AppendLog(m));
         engine.StateChanged += s => Ui(() => ShowState(s));
         engine.Start();
@@ -128,6 +136,19 @@ public sealed class MainForm : Form
         engine = null;
         btnStartStop.Text = "▶ Start";
         AppendLog("[engine] stopped");
+    }
+
+    private string OctaveText() => $"Octave: {config.OctaveShift:+0;-0;0}";
+
+    /// <summary>Global transpose by whole octaves (−2..+2): live on a running engine, and persisted.</summary>
+    private void ShiftOctave(int delta)
+    {
+        int v = Math.Clamp(config.OctaveShift + delta, -2, 2);
+        if (v == config.OctaveShift) return;
+        config.OctaveShift = v;
+        lblOctave.Text = OctaveText();
+        engine?.SetOctaveShift(v);
+        Save();
     }
 
     private void ShowState(EngineState s)

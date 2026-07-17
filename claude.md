@@ -27,7 +27,7 @@ The design below is largely **intended behavior**. The current code reflects onl
 | Controller / gamepad + keyboard input | ✅ **Working** | `Input/MappedControllerInput.cs` reads the winmm gamepad (F500) **and** keyboard (`KeyboardReader`) through a remappable `ControllerMap`; `WinmmControllerInput` kept for the raw F500 mapping |
 | UI | ✅ **WinForms app** | `UI/MainForm.cs` — tabs: Play (live state), Presets (grid editor), Controls (remap), Audio. The play loop is `Engine/PlayEngine.cs` on a background thread (`VP_HEADLESS=1` runs it console-only) |
 | JSON presets & config | ✅ **Working** | `Config/*` — presets (grid cells), controller map, and audio settings persist as JSON at `%APPDATA%/VirtuoPhone/config.json` (`ConfigStore`) |
-| Modulation / dash / configurable audio | ✅ **Working** | Start-modulation + directional dash in `PlayEngine`; audio device/mode/latency/volume via `AudioSettings` → `NAudioSoundPool`. Pitch-bend-on-move (§6) is the last optional TODO |
+| Modulation / dash / octave / configurable audio | ✅ **Working** | Start-modulation + directional dash + global octave ± transpose in `PlayEngine`; audio device/mode/latency/volume via `AudioSettings` → `NAudioSoundPool`. Pitch-bend-on-move (§6) is the last optional TODO |
 
 ### Resolved — `R.Raw.*` resource ids (was the initial build blocker)
 **Fixed:** `Resources/R.cs` is auto-generated — a nested `R.Raw` of int constants plus an
@@ -139,12 +139,12 @@ Config/
   AudioSettings.cs             Device / shared-vs-exclusive / latency / master volume (→ NAudioSoundPool)
   Preset.cs                    A preset: 9 inner cells + 4 outer "dash" cells, each Cell(root, ChordType); Default() = Chromatic Spiral
   ControllerMap.cs             Remappable gamepad-button + keyboard-key bindings per action (F500 + keyboard defaults)
-  AppConfig.cs                 Presets + active + instrument + audio + controls; ConfigStore load/save JSON (%APPDATA%/VirtuoPhone)
+  AppConfig.cs                 Presets + active + instrument + octave-shift + audio + controls; ConfigStore load/save JSON (%APPDATA%/VirtuoPhone)
 Engine/
   PlayEngine.cs                The play loop on a background thread: modulation, dash, voice management; Status/StateChanged events
 UI/
-  MainForm.cs                  WinForms window + tabs; owns the config, input, and PlayEngine lifecycle
-  PresetTab.cs                 Grid editor (edit each cell's chord) + preset new/duplicate/rename/delete/save
+  MainForm.cs                  WinForms window + tabs; owns config/input/PlayEngine; Play tab has a global octave ± transpose
+  PresetTab.cs                 Grid editor (edit each cell's chord) + preset new/duplicate/rename/delete (auto-saves; no Save button)
   ControlsTab.cs               Remap table; rebind any action to a gamepad button and/or a key
   AudioTab.cs                  Output device / mode / latency / master-volume, live-applied
   Capture.cs, Prompt.cs        Small modal dialogs (key/button capture, text input)

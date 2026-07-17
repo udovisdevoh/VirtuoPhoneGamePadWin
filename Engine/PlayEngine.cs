@@ -27,7 +27,9 @@ public sealed class PlayEngine
     private volatile Preset preset;
     private volatile Preset? pendingPreset;
     private volatile AudioSettings? pendingAudio;
+    private volatile int pendingOctaveShift = int.MinValue;   // int.MinValue = no pending shift
     private int startupInstrument;
+    private int octaveSemitones;                 // global transpose applied to every voicing pitch
 
     // Runtime tonal state.
     private int centerRoot;
@@ -39,15 +41,17 @@ public sealed class PlayEngine
     public event Action<EngineState>? StateChanged;
     public bool IsRunning => running;
 
-    public PlayEngine(IControllerInput input, Preset preset, int instrumentIndex)
+    public PlayEngine(IControllerInput input, Preset preset, int instrumentIndex, int octaveShift = 0)
     {
         this.input = input;
         this.preset = preset;
         startupInstrument = instrumentIndex;
+        octaveSemitones = Math.Clamp(octaveShift, -2, 2) * 12;
     }
 
     public void SetPreset(Preset p) => pendingPreset = p;
     public void SetAudioSettings(AudioSettings a) => pendingAudio = a;
+    public void SetOctaveShift(int octaves) => pendingOctaveShift = octaves;
 
     public void Start()
     {
@@ -73,7 +77,10 @@ public sealed class PlayEngine
     {
         var chord = new Chord(root, type);
         int[] chordVoicing = chord.Select(n => n.GetPitch()).ToArray();
-        return new GridCell(VoiceLeading.VoiceCell(anchor, chordVoicing), root % 12, chord.ToString());
+        int[] voicing = VoiceLeading.VoiceCell(anchor, chordVoicing);
+        if (octaveSemitones != 0)
+            for (int i = 0; i < voicing.Length; i++) voicing[i] += octaveSemitones;   // global octave transpose
+        return new GridCell(voicing, root % 12, chord.ToString());
     }
 
     private void BuildGrids()
@@ -191,6 +198,17 @@ public sealed class PlayEngine
                 instrument = app.RebuildInstrument();
                 ReAttachInstrument(lastMask);
                 Log("[audio] settings applied");
+            }
+            if (pendingOctaveShift != int.MinValue)
+            {
+                int oct = pendingOctaveShift;
+                pendingOctaveShift = int.MinValue;
+                octaveSemitones = Math.Clamp(oct, -2, 2) * 12;
+                BuildGrids();
+                current = dashedDir == dir ? outerGrid[dir] : grid[dir];
+                ReAttachInstrument(lastMask);
+                Log($"[octave] {octaveSemitones / 12:+0;-0;0}");
+                PushState(dashedDir == dir);
             }
 
             InputSnapshot snap = input.Poll();

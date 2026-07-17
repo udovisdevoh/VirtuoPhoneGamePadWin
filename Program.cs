@@ -31,7 +31,7 @@ internal static class Program
         var input = new MappedControllerInput(deviceId, config.Controls);
         Console.WriteLine($"[play] headless — input: {input.Name}");
 
-        var engine = new PlayEngine(input, config.ActivePresetOrDefault(), config.Instrument);
+        var engine = new PlayEngine(input, config.ActivePresetOrDefault(), config.Instrument, config.OctaveShift);
         engine.Status += Console.WriteLine;
         engine.Start();
         Console.WriteLine("[play] running — buttons=notes, stick=chord, Select=instrument, Start=modulate. Ctrl+C to quit.");

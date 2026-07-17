@@ -11,6 +11,7 @@ public sealed class AppConfig
     public List<Preset> Presets { get; set; } = new();
     public int ActivePreset { get; set; }
     public int Instrument { get; set; }              // instrument index the Select button cycles from
+    public int OctaveShift { get; set; }             // global transpose in octaves (−2..+2)
     public AudioSettings Audio { get; set; } = new();
     public ControllerMap Controls { get; set; } = new();
 
@@ -22,6 +23,7 @@ public sealed class AppConfig
         if (Presets.Count == 0) Presets.Add(Preset.Default());
         foreach (var p in Presets) p.Normalize();
         ActivePreset = Math.Clamp(ActivePreset, 0, Presets.Count - 1);
+        OctaveShift = Math.Clamp(OctaveShift, -2, 2);
         Audio ??= new AudioSettings();
         Controls ??= new ControllerMap();
         Controls.Normalize();
