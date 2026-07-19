@@ -12,34 +12,25 @@ public class StringExpander
 
     public static void AddMoreNotes(Chord chord, int desiredStringCount)
     {
-
-        int stringCountToAdd = desiredStringCount - chord.Count;
-
-        // Only re-center by dropping an octave on LARGE expansions (e.g. the 17-note harp). For a small
-        // expansion like the guitar's 6→8, the periodic drop pushes the lowest notes below the instrument's
-        // minPitchToPlay and silences them — so keep the added notes stacked above instead.
-        bool allowOctaveDrop = stringCountToAdd > 2;
-
-        while (stringCountToAdd > 0)
+        // Distinct pitch classes present, and the current highest pitch.
+        var classes = new HashSet<int>();
+        int max = int.MinValue;
+        foreach (Note n in chord)
         {
-            if (allowOctaveDrop && stringCountToAdd % 3 == 1)
-            {
-                ReduceOctaveAllNotes(chord);
-            }
-
-            int rarestNote = GetRarestNote(chord);
-
-            Note newNote = new Note(rarestNote);
-
-            int lastPitch = chord.LastPitch();
-
-            while (chord.ContainsExact(newNote) || newNote.GetPitch() <= lastPitch)
-                newNote.SetPitch(newNote.GetPitch() + 12);
-
-            chord.AddNote(newNote);
-
-            stringCountToAdd--;
+            classes.Add(((n.GetPitch() % 12) + 12) % 12);
+            if (n.GetPitch() > max) max = n.GetPitch();
         }
+
+        // Stack the next distinct chord tone ABOVE the current top — tight ascending, so N notes span only
+        // ~ceil(N / classCount) octaves. (The old rarest-note stacking octave-jumped and ran away — 21 notes of
+        // a 3-note chord spanned ~11 octaves, past MIDI range.) A final pass fits the whole voicing into [0,127].
+        while (chord.Count < desiredStringCount)
+        {
+            do { max++; } while (!classes.Contains(((max % 12) + 12) % 12));
+            chord.AddNote(new Note(max));
+        }
+
+        FitToRange(chord);
     }
 
     public static void RemoveSomeNotes(Chord chord, int desiredStringCount)
@@ -166,5 +157,24 @@ public class StringExpander
         {
             note.SetPitch(note.GetPitch() - 12);
         }
+    }
+
+    private static void RaiseOctaveAllNotes(Chord chord)
+    {
+        foreach (Note note in chord)
+        {
+            note.SetPitch(note.GetPitch() + 12);
+        }
+    }
+
+    // Octave-shift the whole voicing so every note lands within [0,127]. A wide voicing (e.g. 21 notes of a
+    // 2-note "five" chord spans ~10 octaves) still fits: its span stays under the full MIDI range, so shifting
+    // the top down until it's ≤ 127 leaves the bottom ≥ 0.
+    private static void FitToRange(Chord chord)
+    {
+        int min = int.MaxValue, max = int.MinValue;
+        foreach (Note n in chord) { min = Math.Min(min, n.GetPitch()); max = Math.Max(max, n.GetPitch()); }
+        while (max > 127) { ReduceOctaveAllNotes(chord); max -= 12; min -= 12; }
+        while (min < 0)   { RaiseOctaveAllNotes(chord);  min += 12; max += 12; }
     }
 }

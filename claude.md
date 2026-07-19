@@ -4,7 +4,8 @@
 A Windows app (C#/.NET 8) that turns a video-game controller — tuned for arcade fight sticks
 like the **Mayflash F500 Elite** — into a polyphonic musical instrument.
 
-- **8 action buttons (right)** → play the notes of the currently selected scale/chord (8-voice polyphony).
+- **Note buttons (up to 21)** → play the notes of the currently selected scale/chord; the F500's 8 buttons
+  cover the lowest 8, the keyboard extends to 21 for a wider melodic range.
 - **Joystick (left)** → selects the active chord/scale via a **3×3 matrix** (neutral center + 8 directions),
   with optional outer double-tap ("dash") positions.
 
@@ -27,7 +28,7 @@ The design below is largely **intended behavior**. The current code reflects onl
 | Controller / gamepad + keyboard input | ✅ **Working** | `Input/MappedControllerInput.cs` reads the winmm gamepad (F500) **and** keyboard (`KeyboardReader`) through a remappable `ControllerMap`; `WinmmControllerInput` kept for the raw F500 mapping |
 | UI | ✅ **WinForms app** | `UI/MainForm.cs` — tabs: Play (live state), Presets (grid editor), Controls (remap), Audio. The play loop is `Engine/PlayEngine.cs` on a background thread (`VP_HEADLESS=1` runs it console-only) |
 | JSON presets & config | ✅ **Working** | `Config/*` — presets (grid cells), controller map, and audio settings persist as JSON at `%APPDATA%/VirtuoPhone/config.json` (`ConfigStore`) |
-| Modulation / dash / octave / configurable audio | ✅ **Working** | Start-modulation + directional dash + global octave ± transpose in `PlayEngine`; audio device/mode/latency/volume via `AudioSettings` → `NAudioSoundPool`. Pitch-bend-on-move (§6) is the last optional TODO |
+| Modulation / dash / octave / configurable audio | ✅ **Working** | Home-modulation + directional dash + hold-Start momentary octave + global octave ± transpose in `PlayEngine`; audio device/mode/latency/volume via `AudioSettings` → `NAudioSoundPool`. Pitch-bend-on-move (§6) is the last optional TODO |
 
 ### Resolved — `R.Raw.*` resource ids (was the initial build blocker)
 **Fixed:** `Resources/R.cs` is auto-generated — a nested `R.Raw` of int constants plus an
@@ -105,7 +106,7 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
 ```
 VirtuoPhoneGamePadWin.csproj   .NET 8 (net8.0-windows) WinForms Exe
 Program.cs                     Entry point ([STAThread] Main): launches UI/MainForm; VP_HEADLESS=1 runs the engine console-only
-AppController.cs               Singleton; STRING_COUNT=8; instrument factory + cache; Next/Set/RebuildInstrument()
+AppController.cs               Singleton; STRING_COUNT=21 (note buttons per voicing); instrument factory + cache; Next/Set/RebuildInstrument()
 Audio/
   ISoundPool.cs                SoundPool API surface — the swappable audio seam
   NAudioSoundPool.cs           Real engine: NVorbis decode, load-time cubic resample, NAudio MixingSampleProvider + WASAPI
@@ -167,9 +168,12 @@ Read these before touching audio code — they are the load-bearing invariants o
   - Builds a `MultiSampleSet[128]` indexed by MIDI pitch; **`InterpolateBlankSamples()`** fills empty pitches
     from the nearest lower sample so every pitch is playable from a sparse recorded set.
   - Polyphony = `stringCount * 2`.
-  - **`stringCount` = the number of note buttons = 8 for every instrument** (like a piano's 8-note layout);
-    chords are voiced / `StringExpander`-ed to 8 notes. The old per-instrument counts (6, 4, 17…) were an
-    Android-app vestige and have been unified to 8 — always use 8.
+  - **`stringCount` = the number of note buttons = `AppController.STRING_COUNT` = 21 for every instrument**
+    (chords/scales are voiced / `StringExpander`-ed to 21 ascending notes). Was 8; raised to 21 so the keyboard
+    can play a wider range — the F500's 8 physical buttons cover the lowest 8 note slots, the rest are keyboard.
+    A 21-note voicing spans `ceil(21/noteCount)` octaves (a 7-note scale = 3 octaves; a triad = 7); `StringExpander`
+    stacks tight ascending then octave-shifts the whole voicing into `[0,127]` (a 2-note "five" chord overflows
+    and the engine wraps it — degenerate at 21).
   - Behavior is declared by overriding abstract **`Build*()`** flags:
     `BuildStringCount`, `BuildMinPitchToPlay`, `BuildIsMuteOnChangeFretSameString`, `BuildIsAutoLoop`,
     `BuildIsAutoLoopKeepNoteUntilNewNote`, `BuildIsPitchBend`, `LoadDrone`,
@@ -197,7 +201,8 @@ Read these before touching audio code — they are the load-bearing invariants o
 Must be highly responsive: crisp execution, rapid directional inputs, low-latency polling, and it must
 **never block the audio thread**.
 
-- **Action Buttons (right, up to 8):** trigger notes of the active scale/chord; 8-voice polyphony.
+- **Note buttons (up to 21):** trigger notes of the active scale/chord (the F500's 8 physical buttons cover the
+  lowest 8 note slots; the keyboard's `ControllerMap.NoteCount`=21 keys extend the range); per-button polyphony.
 - **Joystick (left):** selects tonal center / active preset cell via a 3×3 grid.
   - **Neutral:** the root chord/scale (e.g. E).
   - **8 directions:** instantly shift the active chord/scale per the loaded preset.
@@ -209,13 +214,15 @@ Must be highly responsive: crisp execution, rapid directional inputs, low-latenc
   holds while the stick stays on that direction and reverts on leaving it. Outer cells are offsets from the
   center (they transpose with modulation); currently placeholder **dim7** voicings until presets are editable.
 - **System buttons:**
-  - **Select:** cycle loaded instruments (sample banks).
-  - **Start (modulation):** ✅ implemented in the play harness. The grid is stored as semitone **offsets from
-    the center**; a Start press moves the center:
+  - **Select:** cycle loaded instruments (sample banks). ✅
+  - **Home (modulation):** ✅ the grid is stored as semitone **offsets from the center**; a Home press moves it:
     - *Single press (+ aimed direction):* transpose so the aimed cell's chord becomes the new center (MAJOR);
       every cell shifts by the same interval. Pressing at neutral resets the center to major.
     - *Double-press (within ~300 ms):* recolor the just-established center to **minor** in place — no extra
       transpose; other cells stay major. Non-blocking, timestamp-based detection off the audio path.
+  - **Start (hold = +1 octave):** ✅ while held, every voicing is rebuilt an octave up and held notes re-voice
+    through the **same path as a joystick chord change** (glide or re-strike per instrument); releasing drops
+    back down. Stacks on the persistent UI octave transpose. *(Modulation used to be on Start; it moved to Home.)*
 - **Remappable controls:** a **remap menu** lets every action be rebound to a controller button/axis **or a
   keyboard key** (keyboard and gamepad are interchangeable input sources), persisted in the JSON config.
 
@@ -338,8 +345,9 @@ Matrices are a 3×3 grid centered on the neutral joystick position, with optiona
    new / duplicate / rename / delete / select presets; edits push live to the engine and persist.
 7. **Interaction logic & voice management:** ✅ done — per-button polyphony, held-note swap on chord change,
    per-instrument note-off, monophony (last-note priority + fall-back), optional violin envelope, drones
-   (bagpipes/sitar), Select = change instrument, **Start = modulation**, and the **double-tap "dash"**. The §6
-   mechanics are complete except the optional **pitch-bend-on-move** (a held note bends as the stick moves). See §6.
+   (bagpipes/sitar), Select = change instrument, **Home = modulation**, **hold-Start = +1 octave**, and the
+   **double-tap "dash"**. The §6 mechanics are complete except the optional **pitch-bend-on-move** (a held note
+   bends continuously as the stick moves — distinct from the discrete octave/chord re-voicings). See §6.
 8. ✅ **UI** — `UI/MainForm.cs` (WinForms), tabs Play / Presets / Controls / Audio; the `PlayEngine` runs
    off-thread and pushes live state to the Play tab.
 9. ✅ **Configurable audio** — the **Audio** tab / `AudioSettings`: output **device**, **shared vs exclusive**,

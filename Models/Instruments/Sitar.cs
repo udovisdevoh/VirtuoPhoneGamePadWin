@@ -47,7 +47,7 @@ public class Sitar : Instrument
 
     protected override int BuildStringCount()
     {
-        return 8;
+        return AppController.STRING_COUNT;
     }
 
     protected override bool BuildIsMuteOnChangeFretSameString()

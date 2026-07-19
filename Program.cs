@@ -34,7 +34,7 @@ internal static class Program
         var engine = new PlayEngine(input, config.ActivePresetOrDefault(), config.Instrument, config.OctaveShift);
         engine.Status += Console.WriteLine;
         engine.Start();
-        Console.WriteLine("[play] running — buttons=notes, stick=chord, Select=instrument, Start=modulate. Ctrl+C to quit.");
+        Console.WriteLine("[play] running — buttons=notes, stick=chord, Select=instrument, Home=modulate, hold Start=+octave. Ctrl+C to quit.");
         Thread.Sleep(Timeout.Infinite);
     }
 }

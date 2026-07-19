@@ -30,6 +30,7 @@ public sealed class PlayEngine
     private volatile int pendingOctaveShift = int.MinValue;   // int.MinValue = no pending shift
     private int startupInstrument;
     private int octaveSemitones;                 // global transpose applied to every voicing pitch
+    private bool startOctaveHeld;                // Start button held = momentary +1 octave
 
     // Runtime tonal state.
     private int centerRoot;
@@ -78,8 +79,9 @@ public sealed class PlayEngine
         var chord = new Chord(root, type);
         int[] chordVoicing = chord.Select(n => n.GetPitch()).ToArray();
         int[] voicing = VoiceLeading.VoiceCell(anchor, chordVoicing);
-        if (octaveSemitones != 0)
-            for (int i = 0; i < voicing.Length; i++) voicing[i] += octaveSemitones;   // global octave transpose
+        int shift = octaveSemitones + (startOctaveHeld ? 12 : 0);   // global transpose + momentary Start-held octave
+        if (shift != 0)
+            for (int i = 0; i < voicing.Length; i++) voicing[i] += shift;
         return new GridCell(voicing, root % 12, chord.ToString());
     }
 
@@ -127,8 +129,8 @@ public sealed class PlayEngine
         int[] streamId = new int[liveButtons];
         int[] basePitch = new int[liveButtons];  Array.Fill(basePitch, int.MinValue);
 
-        bool lastSelect = false, lastStart = false;
-        long lastStartMs = -10000; const long doubleTapMs = 300;
+        bool lastSelect = false, lastHome = false, lastStart = false;
+        long lastHomeMs = -10000; const long doubleTapMs = 300;
         Direction? dashedDir = null, lastTapDir = null; long lastTapMs = -10000; const long dashMs = 350;
 
         var heldMono = new List<int>(); int monoButton = -1; int monoStreamId = 0;
@@ -224,20 +226,31 @@ public sealed class PlayEngine
             }
             lastSelect = snap.Select;
 
-            // Start modulation: single press transposes to the aimed cell (major center); a quick double-press
+            // Home modulation: single press transposes to the aimed cell (major center); a quick double-press
             // recolors that new center minor (no re-transpose).
             bool gridChanged = false;
-            if (snap.Start && !lastStart)
+            if (snap.Home && !lastHome)
             {
                 long nowMs = sw.ElapsedMilliseconds;
-                bool dbl = nowMs - lastStartMs <= doubleTapMs;
-                lastStartMs = nowMs;
+                bool dbl = nowMs - lastHomeMs <= doubleTapMs;
+                lastHomeMs = nowMs;
                 if (dbl) centerMinor = true;
                 else { centerRoot = (centerRoot + InnerOffset(snap.Dir)) % 12; centerMinor = false; }
                 dashedDir = null;
                 BuildGrids();
                 gridChanged = true;
                 Log($"[modulate] center {new Note(centerRoot).GetName()}{(centerMinor ? "m" : "")}" + (dbl ? " (double->minor)" : $" (via {snap.Dir})"));
+            }
+            lastHome = snap.Home;
+
+            // Start held = momentary +1 octave: rebuild the grid an octave up and re-voice held notes through the
+            // same path as a joystick chord change (glide or re-strike per instrument); releasing drops back down.
+            if (snap.Start != lastStart)
+            {
+                startOctaveHeld = snap.Start;
+                BuildGrids();
+                gridChanged = true;
+                Log($"[start-octave] {(startOctaveHeld ? "+1" : "0")}");
             }
             lastStart = snap.Start;
 

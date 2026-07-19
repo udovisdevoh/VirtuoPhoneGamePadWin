@@ -41,9 +41,9 @@ public sealed class ControlsTab : UserControl
             int idx = i;
             AddRow($"Note {i + 1}", () => map.NoteButtons[idx], v => map.NoteButtons[idx] = v, () => map.NoteKeys[idx], v => map.NoteKeys[idx] = v);
         }
-        AddRow("Start (modulate)", () => map.StartButton, v => map.StartButton = v, () => map.StartKey, v => map.StartKey = v);
+        AddRow("Start (hold = +octave)", () => map.StartButton, v => map.StartButton = v, () => map.StartKey, v => map.StartKey = v);
         AddRow("Select (instrument)", () => map.SelectButton, v => map.SelectButton = v, () => map.SelectKey, v => map.SelectKey = v);
-        AddRow("Home", () => map.HomeButton, v => map.HomeButton = v, () => map.HomeKey, v => map.HomeKey = v);
+        AddRow("Home (modulate)", () => map.HomeButton, v => map.HomeButton = v, () => map.HomeKey, v => map.HomeKey = v);
         AddRow("Direction Up", null, null, () => map.UpKey, v => map.UpKey = v);
         AddRow("Direction Down", null, null, () => map.DownKey, v => map.DownKey = v);
         AddRow("Direction Left", null, null, () => map.LeftKey, v => map.LeftKey = v);
