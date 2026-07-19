@@ -41,9 +41,9 @@ public sealed class MappedControllerInput : IControllerInput
             buttons = s.Buttons; x = s.X; y = s.Y;
         }
 
-        int mask = 0;
+        long mask = 0;
         for (int i = 0; i < ControllerMap.NoteCount; i++)
-            if (PadDown(buttons, m.NoteButtons[i]) || KeyboardReader.IsDown(m.NoteKeys[i])) mask |= 1 << i;
+            if (PadDown(buttons, m.NoteButtons[i]) || KeyboardReader.IsDown(m.NoteKeys[i])) mask |= 1L << i;
 
         bool up    = (hasPad && y < -AxisThreshold) || KeyboardReader.IsDown(m.UpKey);
         bool down  = (hasPad && y >  AxisThreshold) || KeyboardReader.IsDown(m.DownKey);

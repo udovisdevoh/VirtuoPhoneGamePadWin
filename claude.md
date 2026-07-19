@@ -4,8 +4,8 @@
 A Windows app (C#/.NET 8) that turns a video-game controller — tuned for arcade fight sticks
 like the **Mayflash F500 Elite** — into a polyphonic musical instrument.
 
-- **Note buttons (up to 21)** → play the notes of the currently selected scale/chord; the F500's 8 buttons
-  cover the lowest 8, the keyboard extends to 21 for a wider melodic range.
+- **Note buttons (up to 48)** → play the notes of the currently selected scale/chord; the F500's 8 buttons
+  cover the lowest 8, the keyboard extends to 48 for a wide melodic range (best for scales).
 - **Joystick (left)** → selects the active chord/scale via a **3×3 matrix** (neutral center + 8 directions),
   with optional outer double-tap ("dash") positions.
 
@@ -106,7 +106,7 @@ Whichever is chosen, `Sample` / `DummySoundPool.Load(...)` / the real engine mus
 ```
 VirtuoPhoneGamePadWin.csproj   .NET 8 (net8.0-windows) WinForms Exe
 Program.cs                     Entry point ([STAThread] Main): launches UI/MainForm; VP_HEADLESS=1 runs the engine console-only
-AppController.cs               Singleton; STRING_COUNT=21 (note buttons per voicing); instrument factory + cache; Next/Set/RebuildInstrument()
+AppController.cs               Singleton; STRING_COUNT=48 (note buttons per voicing); instrument factory + cache; Next/Set/RebuildInstrument()
 Audio/
   ISoundPool.cs                SoundPool API surface — the swappable audio seam
   NAudioSoundPool.cs           Real engine: NVorbis decode, load-time cubic resample, NAudio MixingSampleProvider + WASAPI
@@ -168,12 +168,14 @@ Read these before touching audio code — they are the load-bearing invariants o
   - Builds a `MultiSampleSet[128]` indexed by MIDI pitch; **`InterpolateBlankSamples()`** fills empty pitches
     from the nearest lower sample so every pitch is playable from a sparse recorded set.
   - Polyphony = `stringCount * 2`.
-  - **`stringCount` = the number of note buttons = `AppController.STRING_COUNT` = 21 for every instrument**
-    (chords/scales are voiced / `StringExpander`-ed to 21 ascending notes). Was 8; raised to 21 so the keyboard
-    can play a wider range — the F500's 8 physical buttons cover the lowest 8 note slots, the rest are keyboard.
-    A 21-note voicing spans `ceil(21/noteCount)` octaves (a 7-note scale = 3 octaves; a triad = 7); `StringExpander`
-    stacks tight ascending then octave-shifts the whole voicing into `[0,127]` (a 2-note "five" chord overflows
-    and the engine wraps it — degenerate at 21).
+  - **`stringCount` = the number of note buttons = `AppController.STRING_COUNT` = 48 for every instrument**
+    (chords/scales are voiced / `StringExpander`-ed to 48 ascending notes). Grown 8 → 21 → 48 so the keyboard
+    plays a wide range — the F500's 8 physical buttons cover the lowest 8 note slots, the rest are keyboard. A
+    48-note voicing spans `ceil(48/classCount)` octaves (a 7-note scale ≈ 7 octaves ≈ fits; a triad ≈ 16 octaves).
+    `StringExpander` stacks tight ascending (next chord tone above the top) then octave-shifts the whole voicing
+    so the bottom is ≥ 0; **few-note chords run past MIDI 127 at the top and the engine wraps those at play**
+    (48 distinct notes only fit for dense targets — 48 buttons is aimed at scales). The **`InputSnapshot.NotesMask`
+    is a 64-bit `long`** (48 > 32 bits).
   - Behavior is declared by overriding abstract **`Build*()`** flags:
     `BuildStringCount`, `BuildMinPitchToPlay`, `BuildIsMuteOnChangeFretSameString`, `BuildIsAutoLoop`,
     `BuildIsAutoLoopKeepNoteUntilNewNote`, `BuildIsPitchBend`, `LoadDrone`,
@@ -201,8 +203,9 @@ Read these before touching audio code — they are the load-bearing invariants o
 Must be highly responsive: crisp execution, rapid directional inputs, low-latency polling, and it must
 **never block the audio thread**.
 
-- **Note buttons (up to 21):** trigger notes of the active scale/chord (the F500's 8 physical buttons cover the
-  lowest 8 note slots; the keyboard's `ControllerMap.NoteCount`=21 keys extend the range); per-button polyphony.
+- **Note buttons (up to 48):** trigger notes of the active scale/chord (the F500's 8 physical buttons cover the
+  lowest 8 note slots; the keyboard's `ControllerMap.NoteCount`=48 keys extend the range); per-button polyphony.
+  The note bitmask is a 64-bit `long` (48 buttons exceed a 32-bit int).
 - **Joystick (left):** selects tonal center / active preset cell via a 3×3 grid.
   - **Neutral:** the root chord/scale (e.g. E).
   - **8 directions:** instantly shift the active chord/scale per the loaded preset.

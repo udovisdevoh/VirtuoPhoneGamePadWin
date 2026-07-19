@@ -11,19 +11,26 @@ namespace VirtuoPhone.Config;
 /// </summary>
 public sealed class ControllerMap
 {
-    // 21 note-button slots (ascending pitch). The F500's 8 physical buttons take the lowest 8; 0 = unbound.
+    // 48 note-button slots (ascending pitch). The F500's 8 physical buttons take the lowest 8; 0 = unbound.
     public int[] NoteButtons { get; set; } =
-        { 1, 2, 10, 9, 4, 5, 8, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    {
+        1, 2, 10, 9, 4, 5, 8, 7,                          // 0-7   F500 buttons
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 8-23
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 24-39
+        0, 0, 0, 0, 0, 0, 0, 0,                           // 40-47
+    };
     public int StartButton { get; set; } = 12;
     public int SelectButton { get; set; } = 11;
     public int HomeButton { get; set; } = 13;
 
-    // 21 keys over three QWERTY rows, low → high (bottom row, home row, top row).
+    // 48 keys across the four QWERTY rows, low → high (bottom row → number row).
     public Keys[] NoteKeys { get; set; } =
     {
-        Keys.Z, Keys.X, Keys.C, Keys.V, Keys.B, Keys.N, Keys.M,   // low   (buttons 0-6)
-        Keys.A, Keys.S, Keys.D, Keys.F, Keys.G, Keys.H, Keys.J,   // mid   (buttons 7-13)
-        Keys.Q, Keys.W, Keys.E, Keys.R, Keys.T, Keys.Y, Keys.U,   // high  (buttons 14-20)
+        Keys.Z, Keys.X, Keys.C, Keys.V, Keys.B, Keys.N, Keys.M, Keys.Oemcomma, Keys.OemPeriod, Keys.OemQuestion,        // 0-9   bottom
+        Keys.A, Keys.S, Keys.D, Keys.F, Keys.G, Keys.H, Keys.J, Keys.K, Keys.L, Keys.OemSemicolon, Keys.OemQuotes,      // 10-20 home
+        Keys.Q, Keys.W, Keys.E, Keys.R, Keys.T, Keys.Y, Keys.U, Keys.I, Keys.O, Keys.P, Keys.OemOpenBrackets, Keys.OemCloseBrackets,  // 21-32 top
+        Keys.D1, Keys.D2, Keys.D3, Keys.D4, Keys.D5, Keys.D6, Keys.D7, Keys.D8, Keys.D9, Keys.D0,                        // 33-42 number
+        Keys.OemMinus, Keys.Oemplus, Keys.Oemtilde, Keys.Back, Keys.OemPipe,                                             // 43-47 number-row extras
     };
     public Keys StartKey { get; set; } = Keys.Enter;
     public Keys SelectKey { get; set; } = Keys.Tab;
@@ -34,7 +41,7 @@ public sealed class ControllerMap
     public Keys LeftKey { get; set; } = Keys.Left;
     public Keys RightKey { get; set; } = Keys.Right;
 
-    public const int NoteCount = 21;
+    public const int NoteCount = 48;
 
     public ControllerMap Clone() => new()
     {

@@ -7,9 +7,9 @@ public enum Direction { Neutral, Up, UpRight, Right, DownRight, Down, DownLeft, 
 /// One immutable input reading. Note buttons are a bitmask (bit <c>i</c> = note button <c>i</c> held),
 /// so a snapshot is a value type with no allocation — cheap to poll every tick and diff.
 /// </summary>
-public readonly record struct InputSnapshot(int NotesMask, Direction Dir, bool Start, bool Select, bool Home)
+public readonly record struct InputSnapshot(long NotesMask, Direction Dir, bool Start, bool Select, bool Home)
 {
-    public bool Note(int i) => (NotesMask & (1 << i)) != 0;
+    public bool Note(int i) => (NotesMask & (1L << i)) != 0;
 }
 
 /// <summary>

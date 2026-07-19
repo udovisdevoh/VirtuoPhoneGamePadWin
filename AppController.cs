@@ -9,7 +9,7 @@ namespace VirtuoPhone;
 
 public class AppController
 {
-    public const int STRING_COUNT = 21;   // note buttons per chord/scale — 8 fit a fight-stick, the rest are keyboard
+    public const int STRING_COUNT = 48;   // note buttons per chord/scale — 8 fit a fight-stick, the rest are keyboard
     private static AppController instance = new AppController();
     public static AppController GetAppController() => instance;
 

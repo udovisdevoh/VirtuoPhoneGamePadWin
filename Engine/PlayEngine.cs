@@ -123,7 +123,7 @@ public sealed class PlayEngine
 
         Direction dir = Direction.Neutral;
         GridCell current = grid[dir];
-        int lastMask = 0;
+        long lastMask = 0;   // 64-bit: one bit per note button (up to 48)
 
         int[] playingPitch = new int[liveButtons]; Array.Fill(playingPitch, int.MinValue);
         int[] streamId = new int[liveButtons];
@@ -151,7 +151,7 @@ public sealed class PlayEngine
 
         // Re-arm all voice state on the current instrument and re-trigger held buttons (used after Select /
         // audio rebuild). Local function so both paths share it.
-        void ReAttachInstrument(int notesMask)
+        void ReAttachInstrument(long notesMask)
         {
             liveButtons = Math.Min(instrument.GetStringCount(), input.NoteButtonCount);
             Array.Fill(playingPitch, int.MinValue);
@@ -160,7 +160,7 @@ public sealed class PlayEngine
             heldMono.Clear(); monoButton = -1; monoStreamId = 0;
             drone = instrument.GetDrone();
             drone?.OnPlayNoteUpdate(instrument.GetSoundPool(), current.Root);
-            for (int i = 0; i < liveButtons; i++) if ((notesMask & (1 << i)) != 0) heldMono.Add(i);
+            for (int i = 0; i < liveButtons; i++) if ((notesMask & (1L << i)) != 0) heldMono.Add(i);
 
             if (instrument.IsMonophonic())
             {
@@ -170,7 +170,7 @@ public sealed class PlayEngine
             else
             {
                 for (int i = 0; i < liveButtons; i++)
-                    if ((notesMask & (1 << i)) != 0)
+                    if ((notesMask & (1L << i)) != 0)
                     {
                         streamId[i] = instrument.Play(current.Voicing[i], i, 0f);
                         playingPitch[i] = basePitch[i] = current.Voicing[i];
@@ -214,8 +214,8 @@ public sealed class PlayEngine
             }
 
             InputSnapshot snap = input.Poll();
-            int rising = snap.NotesMask & ~lastMask;
-            int falling = lastMask & ~snap.NotesMask;
+            long rising = snap.NotesMask & ~lastMask;
+            long falling = lastMask & ~snap.NotesMask;
 
             // Select → next instrument.
             if (snap.Select && !lastSelect)
@@ -283,8 +283,8 @@ public sealed class PlayEngine
 
             if (instrument.IsMonophonic())
             {
-                for (int i = 0; i < liveButtons; i++) if ((falling & (1 << i)) != 0) heldMono.Remove(i);
-                for (int i = 0; i < liveButtons; i++) if ((rising & (1 << i)) != 0) { heldMono.Remove(i); heldMono.Add(i); }
+                for (int i = 0; i < liveButtons; i++) if ((falling & (1L << i)) != 0) heldMono.Remove(i);
+                for (int i = 0; i < liveButtons; i++) if ((rising & (1L << i)) != 0) { heldMono.Remove(i); heldMono.Add(i); }
 
                 int active = heldMono.Count > 0 ? heldMono[^1] : -1;
                 if (active != monoButton || (chordChanged && active >= 0))
@@ -299,9 +299,9 @@ public sealed class PlayEngine
                 if (chordChanged)
                 {
                     float gliss = instrument.GetGlissandoSeconds();
-                    int sustained = lastMask & snap.NotesMask;
+                    long sustained = lastMask & snap.NotesMask;
                     for (int i = 0; i < liveButtons; i++)
-                        if ((sustained & (1 << i)) != 0 && streamId[i] != 0)
+                        if ((sustained & (1L << i)) != 0 && streamId[i] != 0)
                         {
                             int newPitch = current.Voicing[i];
                             if (gliss > 0f)
@@ -322,7 +322,7 @@ public sealed class PlayEngine
                 }
 
                 for (int i = 0; i < liveButtons; i++)
-                    if ((rising & (1 << i)) != 0)
+                    if ((rising & (1L << i)) != 0)
                     {
                         streamId[i] = instrument.Play(current.Voicing[i], i, 0f);
                         playingPitch[i] = basePitch[i] = current.Voicing[i];
@@ -330,7 +330,7 @@ public sealed class PlayEngine
 
                 if (instrument.IsAutoLoop())
                     for (int i = 0; i < liveButtons; i++)
-                        if ((falling & (1 << i)) != 0 && streamId[i] != 0)
+                        if ((falling & (1L << i)) != 0 && streamId[i] != 0)
                         {
                             instrument.Stop(streamId[i]); streamId[i] = 0; playingPitch[i] = int.MinValue;
                         }
