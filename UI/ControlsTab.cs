@@ -30,7 +30,8 @@ public sealed class ControlsTab : UserControl
         {
             AutoSize = true, MaximumSize = new Size(760, 0), Margin = new Padding(0, 0, 0, 8),
             Text = $"Controller: {main.Input.Name}.  Gamepad and keyboard both work — either source triggers an "
-                 + "action. Directions use the stick (gamepad) or the four direction keys below.",
+                 + "action. The stick selects a chord momentarily; the keyboard direction keys LATCH (the chord "
+                 + "stays selected after you release) — press the neutral key to return to centre.",
         }, 0, 0);
 
         var scroll = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
@@ -48,6 +49,7 @@ public sealed class ControlsTab : UserControl
         AddRow("Direction Down", null, null, () => map.DownKey, v => map.DownKey = v);
         AddRow("Direction Left", null, null, () => map.LeftKey, v => map.LeftKey = v);
         AddRow("Direction Right", null, null, () => map.RightKey, v => map.RightKey = v);
+        AddRow("Direction Neutral (keyboard latch)", null, null, () => map.NeutralKey, v => map.NeutralKey = v);
         scroll.Controls.Add(grid);
         root.Controls.Add(scroll, 0, 1);
 

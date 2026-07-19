@@ -206,9 +206,14 @@ Must be highly responsive: crisp execution, rapid directional inputs, low-latenc
 - **Note buttons (up to 48):** trigger notes of the active scale/chord (the F500's 8 physical buttons cover the
   lowest 8 note slots; the keyboard's `ControllerMap.NoteCount`=48 keys extend the range); per-button polyphony.
   The note bitmask is a 64-bit `long` (48 buttons exceed a 32-bit int).
-- **Joystick (left):** selects tonal center / active preset cell via a 3×3 grid.
+- **Joystick (left) / keyboard direction keys:** select the tonal center / active preset cell via a 3×3 grid.
   - **Neutral:** the root chord/scale (e.g. E).
   - **8 directions:** instantly shift the active chord/scale per the loaded preset.
+  - **✅ Stick = momentary** (reverts to neutral on release); **keyboard direction keys = LATCHING** — the
+    selected chord/scale persists after the key is released (the keyboard can't hold a direction while the
+    other hand plays), and a dedicated **neutral key** (`ControllerMap.NeutralKey`, default Space) returns to
+    center. Handled in `MappedControllerInput`: the stick overrides while pushed **and clears the latch** (so it
+    stays momentary → neutral, exactly as before); when the stick is idle the latched keyboard cell holds.
 - **Dynamic pitch-bend / sample-swap:** if a button is **held** while the joystick moves, the sounding note
   pitch-bends or swaps to the corresponding sample in the new chord/scale (see `Instrument.SetStreamPitch`,
   `IsPitchBend`).

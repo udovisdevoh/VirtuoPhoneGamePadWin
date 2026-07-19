@@ -14,6 +14,7 @@ public sealed class MappedControllerInput : IControllerInput
 
     private readonly int deviceId;          // winmm slot, or -1 for keyboard only
     private volatile ControllerMap map;
+    private Direction latchedKeyDir = Direction.Neutral;   // keyboard-selected chord cell (persists on release)
 
     public string Name { get; }
     public bool Connected => true;          // the keyboard is always available
@@ -45,16 +46,29 @@ public sealed class MappedControllerInput : IControllerInput
         for (int i = 0; i < ControllerMap.NoteCount; i++)
             if (PadDown(buttons, m.NoteButtons[i]) || KeyboardReader.IsDown(m.NoteKeys[i])) mask |= 1L << i;
 
-        bool up    = (hasPad && y < -AxisThreshold) || KeyboardReader.IsDown(m.UpKey);
-        bool down  = (hasPad && y >  AxisThreshold) || KeyboardReader.IsDown(m.DownKey);
-        bool left  = (hasPad && x < -AxisThreshold) || KeyboardReader.IsDown(m.LeftKey);
-        bool right = (hasPad && x >  AxisThreshold) || KeyboardReader.IsDown(m.RightKey);
+        // Stick direction is MOMENTARY (reverts to neutral on release).
+        Direction stick = ToDirection(hasPad && y < -AxisThreshold, hasPad && y > AxisThreshold,
+                                      hasPad && x < -AxisThreshold, hasPad && x > AxisThreshold);
+
+        // Keyboard direction LATCHES: it follows the keys while held and persists the last non-neutral value
+        // after release; the neutral key clears it. (The keyboard can't comfortably hold a direction while the
+        // other hand plays notes, so the chord/scale selection stays put until you pick another or hit neutral.)
+        Direction liveKeys = ToDirection(KeyboardReader.IsDown(m.UpKey), KeyboardReader.IsDown(m.DownKey),
+                                         KeyboardReader.IsDown(m.LeftKey), KeyboardReader.IsDown(m.RightKey));
+        if (KeyboardReader.IsDown(m.NeutralKey)) latchedKeyDir = Direction.Neutral;
+        else if (liveKeys != Direction.Neutral) latchedKeyDir = liveKeys;
+
+        // The stick stays MOMENTARY exactly as before: while it's pushed it takes over AND clears any keyboard
+        // latch, so releasing the stick always returns to neutral — the joystick never leaves a chord stuck.
+        if (stick != Direction.Neutral) latchedKeyDir = Direction.Neutral;
+
+        Direction dir = stick != Direction.Neutral ? stick : latchedKeyDir;
 
         bool start  = PadDown(buttons, m.StartButton)  || KeyboardReader.IsDown(m.StartKey);
         bool select = PadDown(buttons, m.SelectButton) || KeyboardReader.IsDown(m.SelectKey);
         bool home   = PadDown(buttons, m.HomeButton)   || KeyboardReader.IsDown(m.HomeKey);
 
-        return new InputSnapshot(mask, ToDirection(up, down, left, right), start, select, home);
+        return new InputSnapshot(mask, dir, start, select, home);
     }
 
     private static bool PadDown(uint buttons, int oneBasedButton) =>

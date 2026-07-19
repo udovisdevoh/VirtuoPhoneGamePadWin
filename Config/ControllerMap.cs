@@ -40,6 +40,7 @@ public sealed class ControllerMap
     public Keys DownKey { get; set; } = Keys.Down;
     public Keys LeftKey { get; set; } = Keys.Left;
     public Keys RightKey { get; set; } = Keys.Right;
+    public Keys NeutralKey { get; set; } = Keys.Space;   // keyboard direction latches; this key clears it to centre
 
     public const int NoteCount = 48;
 
@@ -49,7 +50,7 @@ public sealed class ControllerMap
         StartButton = StartButton, SelectButton = SelectButton, HomeButton = HomeButton,
         NoteKeys = (Keys[])NoteKeys.Clone(),
         StartKey = StartKey, SelectKey = SelectKey, HomeKey = HomeKey,
-        UpKey = UpKey, DownKey = DownKey, LeftKey = LeftKey, RightKey = RightKey,
+        UpKey = UpKey, DownKey = DownKey, LeftKey = LeftKey, RightKey = RightKey, NeutralKey = NeutralKey,
     };
 
     /// <summary>Repair a hand-edited / older map so the note arrays are always <see cref="NoteCount"/> long,
