@@ -53,8 +53,13 @@ public sealed class MappedControllerInput : IControllerInput
         // Keyboard direction LATCHES: it follows the keys while held and persists the last non-neutral value
         // after release; the neutral key clears it. (The keyboard can't comfortably hold a direction while the
         // other hand plays notes, so the chord/scale selection stays put until you pick another or hit neutral.)
-        Direction liveKeys = ToDirection(KeyboardReader.IsDown(m.UpKey), KeyboardReader.IsDown(m.DownKey),
-                                         KeyboardReader.IsDown(m.LeftKey), KeyboardReader.IsDown(m.RightKey));
+        Direction liveKeys;
+        if (KeyboardReader.IsDown(m.UpLeftKey)) liveKeys = Direction.UpLeft;            // dedicated diagonal keys
+        else if (KeyboardReader.IsDown(m.UpRightKey)) liveKeys = Direction.UpRight;
+        else if (KeyboardReader.IsDown(m.DownLeftKey)) liveKeys = Direction.DownLeft;
+        else if (KeyboardReader.IsDown(m.DownRightKey)) liveKeys = Direction.DownRight;
+        else liveKeys = ToDirection(KeyboardReader.IsDown(m.UpKey), KeyboardReader.IsDown(m.DownKey),   // else combine cardinals
+                                    KeyboardReader.IsDown(m.LeftKey), KeyboardReader.IsDown(m.RightKey));
         if (KeyboardReader.IsDown(m.NeutralKey)) latchedKeyDir = Direction.Neutral;
         else if (liveKeys != Direction.Neutral) latchedKeyDir = liveKeys;
 

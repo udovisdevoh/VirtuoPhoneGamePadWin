@@ -160,7 +160,20 @@ claude.original.prompt.md      Original French brief that seeded this project (d
 Read these before touching audio code — they are the load-bearing invariants of the Java port.
 
 - **Pitch = integer semitones (MIDI-like).** `pitch = noteType + octave*12`, `noteType` 0..11 (`C`=0 … `B`=11).
-  `Note` exposes named constants (`Note.E`, `Note.FSharp`, …). Sub-zero / >127 pitches are clamped or skipped.
+  `Note` exposes named constants (`Note.E`, `Note.FSharp`, …).
+- **Pitch domain is WIDE: `Note.MinPitch` (−1024) … `Note.MaxPitch` (+1024) — _not_ MIDI 0-127.** A 48-note
+  voicing of a triad spans ~16 octaves, so chords / `StringExpander` / `VoiceLeading` all work in this wide
+  domain. **Never clamp or octave-wrap (+12/−12) a pitch into 0-127** — doing so distorted layouts and broke
+  voice leading outright (see below). Only the **sample table** is MIDI-sized (`Note.SampleTableSize` = 128):
+  `Instrument.Play`/`SetStreamPitch` bounds-check it via `HasSample(pitch)` and **return silently (streamId 0)
+  for a pitch with no sample** — out-of-table pitches are normal and must never throw. There is no artificial
+  `minPitchToPlay` gate on playback any more.
+  - **Bug this caused (fixed, don't regress):** `VoiceLeading.Candidates` clamped candidates to `0..127`, so with
+    48 voices the upper ones had **no candidates at all**; the DP failed at every window and `ClosestVoicing`
+    fell back to `return sourceVoicing` — so **every cell rendered as the centre chord** (D major sounded exactly
+    like E major). Fixed by widening the candidate bounds to the pitch domain **and** changing the last-resort
+    fallback to `AscendingStack` (the *target* chord stacked ascending) so a failure can never again disguise
+    itself as "no layout change". Measured: max per-voice movement E→D went 11 semitones → 3.
 - **Pitch-shifting a sample:** `rate = 1.0594632^((desiredPitch - originalPitch) + pitchBend)`
   (12-tone equal temperament; `1.0594632 ≈ 2^(1/12)`). Playing a note = find the `MultiSampleSet` at that
   MIDI index, pick a (random) `Sample`, play it at the computed `rate`.
@@ -203,9 +216,10 @@ Read these before touching audio code — they are the load-bearing invariants o
 Must be highly responsive: crisp execution, rapid directional inputs, low-latency polling, and it must
 **never block the audio thread**.
 
-- **Note buttons (up to 48):** trigger notes of the active scale/chord (the F500's 8 physical buttons cover the
-  lowest 8 note slots; the keyboard's `ControllerMap.NoteCount`=48 keys extend the range); per-button polyphony.
-  The note bitmask is a 64-bit `long` (48 buttons exceed a 32-bit int).
+- **Note buttons (up to 48):** trigger notes of the active scale/chord. The F500's 8 physical buttons default to
+  the **middle slots (20-27)** so they land on a comfortable playable octave at UI octave 0 (the lowest slots get
+  pushed below `minPitchToPlay` on wide voicings); the keyboard's `ControllerMap.NoteCount`=48 keys cover all 48.
+  Per-button polyphony; the note bitmask is a 64-bit `long` (48 buttons exceed a 32-bit int).
 - **Joystick (left) / keyboard direction keys:** select the tonal center / active preset cell via a 3×3 grid.
   - **Neutral:** the root chord/scale (e.g. E).
   - **8 directions:** instantly shift the active chord/scale per the loaded preset.
@@ -214,6 +228,8 @@ Must be highly responsive: crisp execution, rapid directional inputs, low-latenc
     other hand plays), and a dedicated **neutral key** (`ControllerMap.NeutralKey`, default Space) returns to
     center. Handled in `MappedControllerInput`: the stick overrides while pushed **and clears the latch** (so it
     stays momentary → neutral, exactly as before); when the stick is idle the latched keyboard cell holds.
+  - **✅ Keyboard diagonals:** dedicated diagonal keys (`Up/Down`×`Left/Right`Key, default the Home/PgUp/End/PgDn
+    nav cluster) give a one-press latched diagonal; holding two cardinal keys also still combines into a diagonal.
 - **Dynamic pitch-bend / sample-swap:** if a button is **held** while the joystick moves, the sounding note
   pitch-bends or swaps to the corresponding sample in the new chord/scale (see `Instrument.SetStreamPitch`,
   `IsPitchBend`).
@@ -241,7 +257,10 @@ How held buttons + joystick chord changes map onto engine voices:
 - **Chord change while holding.** ✅ When the joystick changes the chord, each held button is re-voiced
   immediately (no re-press). **Portamento** instruments (violin, sitar) glide the ringing voice to the new
   note; **all others** (piano, harp…) mute the previous note and re-strike the button on the new chord —
-  always, even if that button's pitch is unchanged.
+  always, even if that button's pitch is unchanged. A held button is re-voiced **regardless of `streamId`**
+  (belt-and-suspenders so a voice can never get stuck muted). The old `minPitchToPlay` silent floor is **gone**
+  (§5): a note only fails to sound if its pitch has no sample, and the wide pitch domain keeps voicings where
+  they were voiced instead of octave-wrapping them. Do not re-introduce a silent floor or a +12/−12 wrap.
 - **Per-instrument note-off.** ✅ On release, **looping/sustained** instruments (`IsAutoLoop()`: violin,
   bagpipes) **stop**; **plucked** ones (guitar, piano, harp, harpsichord, sitar, jew's-harp, synth) ring out.
 - **Monophonic instruments** (`IsMonophonic()`: bagpipes chanter). ✅ **Last-note priority with fall-back**:

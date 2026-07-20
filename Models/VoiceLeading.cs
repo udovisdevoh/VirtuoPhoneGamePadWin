@@ -39,7 +39,38 @@ public static class VoiceLeading
             int[]? solved = Solve(sourceVoicing, classes, window);
             if (solved != null) return solved;
         }
-        return sourceVoicing.ToArray();   // unreachable for any real chord — never crash
+        return AscendingStack(sourceVoicing, classes);   // never returns the SOURCE chord — that hid a real bug
+    }
+
+    /// <summary>
+    /// Last-resort voicing: the target's chord tones stacked strictly ascending from the bottom of the source.
+    /// It is still the <i>target</i> chord — returning the source voicing instead would silently render the new
+    /// chord as the old one (the "D major still sounds like E major" bug), hiding the failure rather than showing it.
+    /// </summary>
+    private static int[] AscendingStack(IReadOnlyList<int> sourceVoicing, int[] classes)
+    {
+        var ordered = classes.OrderBy(c => c).ToArray();
+        var result = new int[sourceVoicing.Count];
+        int p = sourceVoicing.Count > 0 ? sourceVoicing[0] : 0;
+        for (int i = 0; i < result.Length; i++)
+        {
+            p = i == 0 ? NearestPitchForClass(p, ordered[0]) : NextPitchAbove(p, ordered);
+            result[i] = p;
+        }
+        return result;
+    }
+
+    /// <summary>The lowest pitch strictly above <paramref name="pitch"/> whose class is in <paramref name="classes"/>.</summary>
+    private static int NextPitchAbove(int pitch, int[] classes)
+    {
+        int best = int.MaxValue;
+        foreach (int c in classes)
+        {
+            int p = NearestPitchForClass(pitch, c);
+            while (p <= pitch) p += 12;
+            if (p < best) best = p;
+        }
+        return best;
     }
 
     /// <summary>The strict-ascending DP at a fixed candidate window; null if no complete voicing fits.</summary>
@@ -122,9 +153,12 @@ public static class VoiceLeading
         var list = new List<int>();
         foreach (int c in classes)
         {
-            int nearest = NearestPitchForClass(source, c);   // within ±6, so always in range
-            for (int p = nearest; p <= 127 && p - source <= window; p += 12) if (p >= 0) list.Add(p);
-            for (int p = nearest - 12; p >= 0 && source - p <= window; p -= 12) list.Add(p);
+            int nearest = NearestPitchForClass(source, c);   // within ±6 of the source
+            // Bounds are the wide pitch domain, NOT MIDI 0-127: with 48 voices the upper ones sit past 127, and
+            // clamping there left them with no candidates at all — the DP then failed at every window and the
+            // caller fell back to the source voicing (so e.g. D major came out sounding exactly like E major).
+            for (int p = nearest; p <= Note.MaxPitch && p - source <= window; p += 12) list.Add(p);
+            for (int p = nearest - 12; p >= Note.MinPitch && source - p <= window; p -= 12) list.Add(p);
         }
         return list;
     }

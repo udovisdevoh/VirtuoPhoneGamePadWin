@@ -50,6 +50,10 @@ public sealed class ControlsTab : UserControl
         AddRow("Direction Left", null, null, () => map.LeftKey, v => map.LeftKey = v);
         AddRow("Direction Right", null, null, () => map.RightKey, v => map.RightKey = v);
         AddRow("Direction Neutral (keyboard latch)", null, null, () => map.NeutralKey, v => map.NeutralKey = v);
+        AddRow("Direction Up-Left", null, null, () => map.UpLeftKey, v => map.UpLeftKey = v);
+        AddRow("Direction Up-Right", null, null, () => map.UpRightKey, v => map.UpRightKey = v);
+        AddRow("Direction Down-Left", null, null, () => map.DownLeftKey, v => map.DownLeftKey = v);
+        AddRow("Direction Down-Right", null, null, () => map.DownRightKey, v => map.DownRightKey = v);
         scroll.Controls.Add(grid);
         root.Controls.Add(scroll, 0, 1);
 

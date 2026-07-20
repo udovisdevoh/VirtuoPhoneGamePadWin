@@ -81,6 +81,24 @@ public class StringExpanderTests
         Assert.All(chord, n => Assert.True(n.GetPitch() >= 0, $"negative pitch {n.GetPitch()}"));
     }
 
+    /// <summary>Pitches outside the sample table must be silent, never throw — voicings legitimately run past
+    /// MIDI range now that the pitch domain is Note.MinPitch..Note.MaxPitch.</summary>
+    [Theory]
+    [InlineData(-1024)]
+    [InlineData(-500)]
+    [InlineData(-1)]
+    [InlineData(128)]
+    [InlineData(500)]
+    [InlineData(1024)]
+    public void Play_PitchOutsideSampleTable_IsSilentAndDoesNotThrow(int pitch)
+    {
+        Instrument instrument = AppController.GetAppController().GetInstrument();
+
+        int streamId = instrument.Play(pitch, 0, 0f);
+
+        Assert.Equal(0, streamId);
+    }
+
     [Fact]
     public void RemoveSomeNotes_ReducesToTargetCount()
     {

@@ -8,6 +8,17 @@ namespace VirtuoPhone.Models;
 
 public class Note
 {
+    // The pitch domain used by chords / voicings / voice leading. Deliberately far wider than MIDI 0-127:
+    // a 48-note voicing of a 3-note chord spans ~16 octaves, and clamping or octave-wrapping it into the MIDI
+    // range distorted layouts (and made voice leading fail outright). Pitches outside the sample array simply
+    // don't sound — see Instrument.Play.
+    public const int MinPitch = -1024;
+
+    public const int MaxPitch = 1024;
+
+    /// <summary>Number of entries in an instrument's sample table (MIDI 0-127) — the only pitches that sound.</summary>
+    public const int SampleTableSize = 128;
+
     private int pitch;
 
     public const int C = 0;

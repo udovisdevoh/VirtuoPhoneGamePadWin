@@ -11,13 +11,14 @@ namespace VirtuoPhone.Config;
 /// </summary>
 public sealed class ControllerMap
 {
-    // 48 note-button slots (ascending pitch). The F500's 8 physical buttons take the lowest 8; 0 = unbound.
+    // 48 note-button slots (ascending pitch). The F500's 8 physical buttons sit on the MIDDLE slots (20-27) so
+    // they land on a comfortable, playable octave at UI octave 0 (the lowest slots get pushed below the playable
+    // range on wide voicings). The keyboard covers all 48; 0 = unbound on the gamepad.
     public int[] NoteButtons { get; set; } =
     {
-        1, 2, 10, 9, 4, 5, 8, 7,                          // 0-7   F500 buttons
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 8-23
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 24-39
-        0, 0, 0, 0, 0, 0, 0, 0,                           // 40-47
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 0-19  keyboard-only (low)
+        1, 2, 10, 9, 4, 5, 8, 7,                                       // 20-27 F500 buttons (centred octave)
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 28-47 keyboard-only (high)
     };
     public int StartButton { get; set; } = 12;
     public int SelectButton { get; set; } = 11;
@@ -42,6 +43,13 @@ public sealed class ControllerMap
     public Keys RightKey { get; set; } = Keys.Right;
     public Keys NeutralKey { get; set; } = Keys.Space;   // keyboard direction latches; this key clears it to centre
 
+    // Dedicated keyboard diagonals (a single key each, so a latched diagonal is one press). Defaults = the
+    // nav-key cluster just above the arrows (Home/PgUp top, End/PgDn bottom). Holding two cardinal keys also works.
+    public Keys UpLeftKey { get; set; } = Keys.Home;
+    public Keys UpRightKey { get; set; } = Keys.PageUp;
+    public Keys DownLeftKey { get; set; } = Keys.End;
+    public Keys DownRightKey { get; set; } = Keys.PageDown;
+
     public const int NoteCount = 48;
 
     public ControllerMap Clone() => new()
@@ -51,6 +59,7 @@ public sealed class ControllerMap
         NoteKeys = (Keys[])NoteKeys.Clone(),
         StartKey = StartKey, SelectKey = SelectKey, HomeKey = HomeKey,
         UpKey = UpKey, DownKey = DownKey, LeftKey = LeftKey, RightKey = RightKey, NeutralKey = NeutralKey,
+        UpLeftKey = UpLeftKey, UpRightKey = UpRightKey, DownLeftKey = DownLeftKey, DownRightKey = DownRightKey,
     };
 
     /// <summary>Repair a hand-edited / older map so the note arrays are always <see cref="NoteCount"/> long,

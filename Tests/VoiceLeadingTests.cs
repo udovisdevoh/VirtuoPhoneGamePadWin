@@ -201,6 +201,45 @@ public class VoiceLeadingTests
                 }
     }
 
+    /// <summary>
+    /// Regression: a 48-voice source runs well past MIDI 127 at the top. Candidates used to be clamped to
+    /// 0..127, so the upper voices had NO candidate at all, the DP failed at every window, and ClosestVoicing
+    /// fell back to returning the SOURCE voicing — E major stayed E major no matter which cell you selected.
+    /// </summary>
+    [Theory]
+    [InlineData(2, 6, 9)]     // D major  — the case the user reported
+    [InlineData(0, 5, 7)]     // Csus4
+    [InlineData(0, 6, 7)]     // Csus4#
+    [InlineData(5, 9, 0)]     // F major
+    public void ClosestVoicing_WideVoicingPastMidiRange_ActuallyChangesChord(int a, int b, int c)
+    {
+        // 48 ascending E-major voices (E B E G# …) — the real layout, spanning ~16 octaves past 127.
+        int[] eClasses = { 4, 8, 11 };
+        var source = new int[48];
+        int p = 28;
+        for (int i = 0; i < 48; i++)
+        {
+            while (!eClasses.Contains(((p % 12) + 12) % 12)) p++;
+            source[i] = p;
+            p++;
+        }
+
+        var target = new HashSet<int> { a, b, c };
+        var v = VoiceLeading.ClosestVoicing(source, target);
+
+        Assert.NotEqual(source, v);                 // the whole point: the layout must actually change
+        AssertStrictlyAscending(v);
+        AssertContainsClasses(v, target.ToArray());
+        Assert.All(v, x => Assert.InRange(x, Note.MinPitch, Note.MaxPitch));
+
+        // …and it must still be genuinely voice-led all the way up, not just "some ascending stack of the right
+        // notes". With candidates clamped to 127 the upper voices fell back to a crude stack and drifted up to
+        // 11 semitones off the source; a working DP keeps every voice within a few semitones.
+        for (int i = 0; i < v.Length; i++)
+            Assert.True(System.Math.Abs(v[i] - source[i]) <= 6,
+                        $"voice {i} moved {v[i] - source[i]} semitones ({source[i]} -> {v[i]}) — voice leading broke down");
+    }
+
     private static void AssertStrictlyAscending(int[] v)
     {
         for (int i = 1; i < v.Length; i++)

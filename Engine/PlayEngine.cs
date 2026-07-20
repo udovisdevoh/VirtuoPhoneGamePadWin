@@ -301,10 +301,10 @@ public sealed class PlayEngine
                     float gliss = instrument.GetGlissandoSeconds();
                     long sustained = lastMask & snap.NotesMask;
                     for (int i = 0; i < liveButtons; i++)
-                        if ((sustained & (1L << i)) != 0 && streamId[i] != 0)
+                        if ((sustained & (1L << i)) != 0)   // held button — re-voice even if it fell silent (streamId 0)
                         {
                             int newPitch = current.Voicing[i];
-                            if (gliss > 0f)
+                            if (gliss > 0f && streamId[i] != 0)
                             {
                                 if (newPitch != playingPitch[i])
                                 {
@@ -314,7 +314,10 @@ public sealed class PlayEngine
                             }
                             else
                             {
-                                instrument.Stop(streamId[i]);
+                                // Non-portamento, OR a held voice that went silent (a cell put it below minPitch):
+                                // re-strike on the new chord. Doing this regardless of streamId is what lets a note
+                                // come back after an out-of-range cell — otherwise streamId stays 0 and it's muted forever.
+                                if (streamId[i] != 0) instrument.Stop(streamId[i]);
                                 streamId[i] = instrument.Play(newPitch, i, 0f);
                                 playingPitch[i] = basePitch[i] = newPitch;
                             }

@@ -167,14 +167,14 @@ public class StringExpander
         }
     }
 
-    // Octave-shift the whole voicing so every note lands within [0,127]. A wide voicing (e.g. 21 notes of a
-    // 2-note "five" chord spans ~10 octaves) still fits: its span stays under the full MIDI range, so shifting
-    // the top down until it's ≤ 127 leaves the bottom ≥ 0.
+    // Octave-shift the whole voicing into the wide pitch domain [Note.MinPitch, Note.MaxPitch]. This is NOT the
+    // MIDI range: a 48-note voicing of a triad spans ~16 octaves, so squeezing it into 0-127 was impossible and
+    // the two loops fought each other. Notes that end up outside the sample table simply don't sound.
     private static void FitToRange(Chord chord)
     {
         int min = int.MaxValue, max = int.MinValue;
         foreach (Note n in chord) { min = Math.Min(min, n.GetPitch()); max = Math.Max(max, n.GetPitch()); }
-        while (max > 127) { ReduceOctaveAllNotes(chord); max -= 12; min -= 12; }
-        while (min < 0)   { RaiseOctaveAllNotes(chord);  min += 12; max += 12; }
+        while (max > Note.MaxPitch) { ReduceOctaveAllNotes(chord); max -= 12; min -= 12; }
+        while (min < Note.MinPitch) { RaiseOctaveAllNotes(chord);  min += 12; max += 12; }
     }
 }

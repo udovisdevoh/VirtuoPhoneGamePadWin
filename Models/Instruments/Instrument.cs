@@ -206,19 +206,18 @@ public abstract class Instrument : IEnumerable<Sample>
         return sampleSet.GetEnumerator();
     }
 
+    /// <summary>True if <paramref name="pitch"/> is inside the sample table and actually has a sample behind it.
+    /// Voicings live in the wide pitch domain (<see cref="Note.MinPitch"/>..<see cref="Note.MaxPitch"/>), so
+    /// out-of-table pitches are normal — they just don't sound, and must never index past the array.</summary>
+    private bool HasSample(int pitch) =>
+        pitch >= 0 && pitch < multiSampleList.Length && multiSampleList[pitch] != null;
+
     public int Play(int desiredPitch, int stringId, float pitchBend)
     {
-        while (desiredPitch < 0)
-        {
-            desiredPitch += 12;
-        }
-
-        while (desiredPitch > 128)
-        {
-            desiredPitch -= 12;
-        }
-
-        if (desiredPitch < minPitchToPlay)
+        // No octave-wrapping and no artificial instrument floor: the pitch is played as voiced. A pitch with no
+        // sample behind it (outside the table, or a gap the interpolation never filled) simply stays silent —
+        // it must never throw.
+        if (!HasSample(desiredPitch))
         {
             return 0;
         }
@@ -323,17 +322,7 @@ public abstract class Instrument : IEnumerable<Sample>
         {
             int desiredPitch = note.GetPitch();
 
-            while (desiredPitch < 0)
-            {
-                desiredPitch += 12;
-            }
-
-            while (desiredPitch > 128)
-            {
-                desiredPitch -= 12;
-            }
-
-            if (desiredPitch < minPitchToPlay)
+            if (!HasSample(desiredPitch))
             {
                 return;
             }
